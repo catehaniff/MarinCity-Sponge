@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sponge City Marin — Community Resilience Project</title>
+  <meta name="description" content="Bringing China's breakthrough sponge city innovations to Marin City, one of the Bay Area's most flood-vulnerable communities.">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Libre+Franklin:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    a { color: inherit; }
+    button { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+const COLORS = {
+  deep: "#0B3D2E",
+  teal: "#1A6B52",
+  tealLight: "#2A8F6F",
+  sage: "#7BAE8E",
+  mint: "#B8D8C8",
+  cream: "#F5F0E8",
+  sand: "#E8DFD0",
+  warm: "#D4A574",
+  coral: "#C75B3A",
+  slate: "#3A3A3A",
+  muted: "#6B6B6B",
+  light: "#FAFAF7",
+};
+
+const FONTS = {
+  display: "'DM Serif Display', Georgia, serif",
+  body: "'Libre Franklin', 'Helvetica Neue', sans-serif",
+};
+
+
+const MAP_SITES = [
+  { id: 1, lat: 37.872, lng: -122.5113, name: "Drake & Donahue — CRITICAL FLOOD NODE", color: "#C0392B", impact: "Floods during every major storm, blocking the ONLY entrance/exit to Marin City.", solution: "Permeable pavement, curbside bioswales, subsurface detention cell, Spire-connected IoT flood sensors." },
+  { id: 2, lat: 37.8730, lng: -122.5102, name: "Gateway Shopping Center & Pond", color: "#2E86C1", impact: "Only stormwater holding pond is grossly undersized. Water backs into parking lot and streets.", solution: "Multi-stage constructed wetland, permeable parking lot, rain gardens. Army Corps $13.5M pump station + second culvert." },
+  { id: 3, lat: 37.8748, lng: -122.5078, name: "Tide Gate & Outfall — THE SINGLE DRAIN", color: "#2E86C1", impact: "Single pipe/tide gate under Hwy 101 is the ONLY outlet. Fills with sand/debris. Bay water pushes back during high tides.", solution: "Automated self-cleaning gate, second outfall culvert, IoT flow/tide/debris sensors via Spire dashboard." },
+  { id: 4, lat: 37.8762, lng: -122.5065, name: "Richardson Bay Shoreline — Living Levee", color: "#2E86C1", impact: "Bike path floods during king tides and storm surge. Sea level rise worsening annually.", solution: "Vegetated living levee (Shenzhen Bay Park model), tidal wetland restoration, coordination with Caltrans Hwy 101 project." },
+  { id: 5, lat: 37.8793, lng: -122.5162, name: "Manzanita Park & Ride — Upper Watershed", color: "#2E86C1", impact: "Caltrans asphalt lot at TOP of watershed sheets all rainwater downhill into community. 'Lots of flooding at high tide.'", solution: "Permeable pavement with subsurface detention. First line of defense — captures runoff before it enters the basin." },
+  { id: 6, lat: 37.8734, lng: -122.5119, name: "Donahue Street Bioswale Corridor", color: "#27AE60", impact: "Main artery carrying unintercepted hillside runoff downhill to the overwhelmed pond.", solution: "Continuous vegetated bioswales both sides (Shenzhen eco-corridor model). Native grasses for 50%+ biodiversity boost." },
+  { id: 7, lat: 37.8741, lng: -122.5133, name: "George Rocky Graham Park — Rain Gardens", color: "#27AE60", impact: "Street runoff flows past park into drainage system unchecked.", solution: "Rain garden network at perimeter. Open area becomes 'water plaza' (Rotterdam model) — recreation + temporary flood storage." },
+  { id: 8, lat: 37.8719, lng: -122.5091, name: "MC Arts Gallery — Streetscape Retrofit", color: "#27AE60", impact: "Commercial area on impervious surfaces contributing to basin runoff.", solution: "Permeable sidewalks, tree box filters, rain gardens designed as public art installations." },
+  { id: 9, lat: 37.8706, lng: -122.5133, name: "Drake Ave — Hillside Bioswale Chain", color: "#D4A017", impact: "Steep grade accelerates runoff from Headlands directly into basin with no interception.", solution: "Terraced bioswales along hillside (Shenzhen model). Native plantings create habitat corridors to GGNRA." },
+  { id: 10, lat: 37.8726, lng: -122.5138, name: "MLK Academy — Green Roof + Schoolyard", color: "#D4A017", impact: "School roof and paved schoolyard shed all rainfall into overwhelmed drainage.", solution: "Green roof pilot (Chongqing model), permeable schoolyard. Students monitor rain gauges — sponge city in curriculum." },
+  { id: 11, lat: 37.8728, lng: -122.5141, name: "CSD / Rec Center — Green Roof + Spire Hub", color: "#D4A017", impact: "Community hub with conventional roof contributing to runoff.", solution: "Green roof, rainwater harvesting cisterns. Becomes sponge city demo site and home for Spire monitoring dashboard." },
+  { id: 12, lat: 37.8690, lng: -122.5120, name: "Golden Gate Village — Micro-Sponge Network", color: "#D4A017", impact: "Historic public housing at lowest basin point. Aging infrastructure, 61% renters, highly flood-vulnerable.", solution: "Rain barrels at every downspout, rain gardens between buildings, permeable walkways. Many small interventions = big retention." },
+];
+
+function TerrainMap() {
+  const ref = useRef(null);
+  const mapRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (mapRef.current) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    document.head.appendChild(link);
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = () => {
+      const L = window.L;
+      const map = L.map(ref.current, { center: [37.8735, -122.5115], zoom: 15, scrollWheelZoom: false });
+      L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", { maxZoom: 20, attribution: "Google Terrain" }).addTo(map);
+
+      MAP_SITES.forEach((site) => {
+        const icon = L.divIcon({
+          className: "",
+          html: '<div style="width:28px;height:28px;border-radius:50%;background:' + site.color + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;cursor:pointer;">' + site.id + '</div>',
+          iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -18],
+        });
+        L.marker([site.lat, site.lng], { icon }).addTo(map).bindPopup(
+          '<div style="max-width:260px;font-family:sans-serif;">' +
+            '<div style="font-weight:700;font-size:13px;color:#2a2a2a;margin-bottom:8px;line-height:1.3;">' + site.name + '</div>' +
+            '<div style="font-size:11px;font-weight:600;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Impacted</div>' +
+            '<div style="font-size:12px;color:#666;line-height:1.5;margin-bottom:8px;">' + site.impact + '</div>' +
+            '<div style="font-size:11px;font-weight:600;color:#1A6B52;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Proposed solution</div>' +
+            '<div style="font-size:12px;color:#666;line-height:1.5;">' + site.solution + '</div>' +
+          '</div>', { maxWidth: 280 }
+        );
+      });
+
+      L.polygon([
+        [37.866,-122.518],[37.866,-122.508],[37.870,-122.506],
+        [37.876,-122.504],[37.880,-122.508],[37.881,-122.516],
+        [37.878,-122.519],[37.873,-122.518],[37.869,-122.517],
+      ], { color: "#1A6B52", weight: 2, opacity: 0.3, fillColor: "#1A6B52", fillOpacity: 0.05, dashArray: "8 6" }).addTo(map);
+
+      L.polyline([
+        [37.879,-122.516],[37.876,-122.514],[37.874,-122.513],
+        [37.872,-122.512],[37.871,-122.510],[37.873,-122.509],[37.875,-122.507],
+      ], { color: "#2E86C1", weight: 2.5, opacity: 0.45, dashArray: "6 8" }).addTo(map);
+
+      mapRef.current = map;
+      setReady(true);
+      setTimeout(() => map.invalidateSize(), 300);
+    };
+    document.head.appendChild(s);
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+  }, []);
+
+  return (
+    <div>
+      <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid #e0e0e0", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", position: "relative" }}>
+        <div ref={ref} style={{ width: "100%", height: 500 }} />
+        {!ready && <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "#e8e4dc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#888" }}>Loading terrain map...</div>}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 14, justifyContent: "center" }}>
+        {[
+          { color: "#C0392B", label: "Critical flood node" },
+          { color: "#2E86C1", label: "Major infrastructure" },
+          { color: "#27AE60", label: "Sponge corridor" },
+          { color: "#D4A017", label: "Building-scale pilot" },
+        ].map((z, i) => (
+          <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B6B6B", fontFamily: FONTS.body }}>
+            <span style={{ width: 14, height: 14, borderRadius: "50%", background: z.color, border: "2px solid #fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", flexShrink: 0 }} />
+            {z.label}
+          </span>
+        ))}
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B6B6B", fontFamily: FONTS.body }}>
+          <span style={{ width: 20, height: 0, borderTop: "2px dashed #2E86C1" }} /> Water flow
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function useInView(threshold = 0.15) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
+
+function FadeIn({ children, delay = 0, style = {} }) {
+  const [ref, visible] = useInView();
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(32px)",
+      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function Badge({ color, bg, children }) {
+  return (
+    <span style={{
+      display: "inline-block", fontSize: 11, fontWeight: 600,
+      fontFamily: FONTS.body, letterSpacing: "0.08em", textTransform: "uppercase",
+      padding: "4px 12px", borderRadius: 20, background: bg, color,
+    }}>{children}</span>
+  );
+}
+
+function StatCard({ number, label, delay = 0 }) {
+  return (
+    <FadeIn delay={delay}>
+      <div style={{
+        textAlign: "center", padding: "28px 16px",
+        background: "rgba(255,255,255,0.6)", borderRadius: 12,
+        backdropFilter: "blur(8px)", border: "1px solid rgba(26,107,82,0.1)",
+      }}>
+        <div style={{ fontFamily: FONTS.display, fontSize: 40, color: COLORS.teal, lineHeight: 1 }}>{number}</div>
+        <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginTop: 8, lineHeight: 1.4 }}>{label}</div>
+      </div>
+    </FadeIn>
+  );
+}
+
+function PhaseCard({ num, title, timeline, desc, tags, color, delay = 0 }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <FadeIn delay={delay}>
+      <div
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          background: "#fff", borderRadius: 16, padding: "32px 28px",
+          border: `1px solid ${hover ? COLORS.tealLight : "#e0e0e0"}`,
+          transition: "all 0.3s ease",
+          boxShadow: hover ? "0 8px 32px rgba(11,61,46,0.08)" : "0 2px 8px rgba(0,0,0,0.04)",
+          transform: hover ? "translateY(-4px)" : "none",
+          cursor: "default",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%", background: color,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: FONTS.display, fontSize: 20, color: "#fff", flexShrink: 0,
+          }}>{num}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate }}>{title}</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted }}>{timeline}</div>
+          </div>
+        </div>
+        <p style={{ fontFamily: FONTS.body, fontSize: 15, color: COLORS.muted, lineHeight: 1.7, margin: 0 }}>{desc}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 16 }}>
+          {tags.map((t, i) => <Badge key={i} bg={COLORS.mint} color={COLORS.deep}>{t}</Badge>)}
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+function SiteCard({ icon, name, zone, desc, origin, num, delay = 0 }) {
+  const [open, setOpen] = useState(false);
+  const zoneColors = {
+    infrastructure: { bg: "#E0EEF6", color: "#1A5276", label: "Major infrastructure", marker: "#2E86C1" },
+    corridor: { bg: "#DEF2E6", color: "#1A6B52", label: "Sponge corridor", marker: "#27AE60" },
+    pilot: { bg: "#FDF2E3", color: "#8B5E1A", label: "Building-scale pilot", marker: "#D4A017" },
+    critical: { bg: "#FBEAEA", color: "#922B21", label: "Critical flood node", marker: "#C0392B" },
+  };
+  const z = zoneColors[zone];
+  return (
+    <FadeIn delay={delay}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          background: "#fff", borderRadius: 14, padding: "20px 24px",
+          border: "1px solid #e8e8e8", cursor: "pointer",
+          transition: "all 0.25s ease",
+          borderLeft: `4px solid ${z.color}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: "50%", background: z.marker,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, color: "#fff", fontWeight: 700, flexShrink: 0,
+            border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+          }}>{num}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 17, color: COLORS.slate }}>{name}</div>
+            <Badge bg={z.bg} color={z.color}>{z.label}</Badge>
+          </div>
+          <span style={{
+            fontSize: 18, color: COLORS.muted, transition: "transform 0.3s",
+            transform: open ? "rotate(180deg)" : "none",
+          }}>▾</span>
+        </div>
+        {open && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #f0f0f0" }}>
+            <p style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.7, margin: 0 }}>{desc}</p>
+            {origin && (
+              <div style={{
+                fontFamily: FONTS.body, fontSize: 12, color: COLORS.teal,
+                marginTop: 10, fontStyle: "italic",
+              }}>China model: {origin}</div>
+            )}
+          </div>
+        )}
+      </div>
+    </FadeIn>
+  );
+}
+
+function TechCard({ title, desc, icon, delay = 0 }) {
+  return (
+    <FadeIn delay={delay}>
+      <div style={{
+        background: "#fff", borderRadius: 14, padding: "24px 22px",
+        border: "1px solid #e8e8e8",
+        display: "flex", gap: 16, alignItems: "flex-start",
+      }}>
+        <span style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>{icon}</span>
+        <div>
+          <div style={{ fontFamily: FONTS.display, fontSize: 17, color: COLORS.slate, marginBottom: 6 }}>{title}</div>
+          <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.65 }}>{desc}</div>
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+const CHINA_CASES = [
+  {
+    title: "Sanya Mangrove Park, Hainan",
+    subtitle: "From wasteland to wetland paradise",
+    desc: "In 2015, landscape architect Kongjian Yu transformed 10 hectares of lifeless landfill behind a concrete floodwall into a lush mangrove park. The design carved the land into interlocking 'fingers' that guide ocean tides inward while blocking storm surge — increasing the water edge from 700m to over 4,000m. Within three years, mangroves were fully established, fish and birds returned in abundance, and the park became a nationally recognized showcase for ecological restoration.",
+    relevance: "Directly applicable to the Gateway pond and Richardson Bay shoreline — shows how to turn a neglected flood-prone area into a community amenity that manages water naturally.",
+    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&h=400&fit=crop",
+    link: "https://www.turenscape.com/en/project/detail/4654.html",
+    linkLabel: "Turenscape project page",
+    techniques: ["Constructed wetland", "Tidal ecotone design", "Mangrove restoration"],
+  },
+  {
+    title: "Dong'an Wetland Park, Sanya",
+    subtitle: "A green sponge in downtown — property values up 300%",
+    desc: "A 68-hectare polluted site along the Sanya River corridor, filled with non-permitted buildings and illegally dumped debris, was transformed into a terraced mosaic of wetlands that filter 6,000 tons of wastewater daily. The wetland cleans water from the poorest quality to non-potable clean standard. The park became an official national sponge city demonstration site, and property values in surrounding neighborhoods increased 300% within two years.",
+    relevance: "Shows how sponge infrastructure can be an economic driver — critical for making the case to Marin City stakeholders and potential funders.",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop",
+    link: "https://www.turenscape.com/en/project/detail/4719.html",
+    linkLabel: "Turenscape project page",
+    techniques: ["Terraced wetlands", "Water purification", "Urban regeneration"],
+  },
+  {
+    title: "Shenzhen Bay Park",
+    subtitle: "13km of floodable greenway buffering a dense city from the sea",
+    desc: "Shenzhen Bay Park places a natural buffer between one of China's densest downtowns and the sea. The 13km coastal path uses permeable pavement over deep gravel beds that let water infiltrate slowly, then percolate through to collection pipes below. Floodable greenways and bikeways are designed to survive and thrive during floods, with wetland vegetation and elevated paths. The park also connects to canal networks draining the ultra-dense Houhai neighborhood.",
+    relevance: "A direct model for the Richardson Bay shoreline living levee concept — showing how a bike path can double as flood infrastructure while improving the community.",
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&h=400&fit=crop",
+    link: "https://thediplomat.com/2023/01/becoming-a-sponge-city-at-shenzhen-speed/",
+    linkLabel: "The Diplomat — Shenzhen sponge city",
+    techniques: ["Permeable greenway", "Coastal buffer", "Canal network"],
+  },
+  {
+    title: "Xiangmi Park, Shenzhen",
+    subtitle: "Former research center becomes a neighborhood sponge",
+    desc: "A former agricultural research center transformed into a community park with 6km of permeable trails, retention ponds, bioswales, and rain gardens. The park was designed by Techand Ecology & Environment with signs throughout explaining how each sponge element works — turning the park into an educational tool. It includes a library, children's play center, and local government offices, all within its green boundaries. Sponge improvements in Shenzhen now cover 24% of the city's total surface area.",
+    relevance: "A model for George Rocky Graham Park and the MLK Academy — showing how community spaces can become educational sponge demonstrations.",
+    image: "https://images.unsplash.com/photo-1416169607655-0c2b3ce2e1cc?w=600&h=400&fit=crop",
+    link: "https://www.lincolninst.edu/publications/articles/sponge-city-shenzhen-explores-benefits-designing-with-nature/",
+    linkLabel: "Lincoln Institute — Designing with nature",
+    techniques: ["Permeable trails", "Rain gardens", "Educational signage"],
+  },
+  {
+    title: "Bishan District, Chongqing",
+    subtitle: "Permeable bricks and school rooftops that breathe",
+    desc: "Bishan District in Chongqing rewrote the rules of urban drainage with permeable bricks that let the ground absorb rain, rain gardens that serve as natural reservoirs, and school rooftops transformed into lush green oases. The approach improved the microclimate, reduced urban heat island effects, and mitigated flooding — all while creating green spaces that the community actively uses and enjoys.",
+    relevance: "The direct model for MLK Academy green roofs, Golden Gate Village permeable walkways, and the Gateway Shopping Center parking lot retrofit.",
+    image: "https://images.unsplash.com/photo-1518173946687-a243bf9c14a8?w=600&h=400&fit=crop",
+    link: "https://news.cgtn.com/news/2025-05-15/Eco-China-The-breathing-sponge-city-1Do7Gi2Iwco/share_amp.html",
+    linkLabel: "CGTN — The breathing sponge city",
+    techniques: ["Permeable pavement", "Green roofs", "Rain gardens"],
+  },
+  {
+    title: "Wuxi Sponge City Demonstration Zone",
+    subtitle: "1,973 facilities — 50%+ boost in urban biodiversity",
+    desc: "Between 2020 and 2023, Wuxi built 1,973 sponge city green infrastructure facilities across a 22-square-kilometer demonstration zone, including 58 major projects. A 2026 study published in Cell Reports Sustainability found that diversifying plants in rain gardens and bioswales increased urban plant richness by over 50%. The study proposed a networking strategy to synergize stormwater management with biodiversity conservation goals.",
+    relevance: "Provides the scientific evidence base for the biodiversity co-benefits Alex can cite — sponge city infrastructure doesn't just manage floods, it restores nature in the community.",
+    image: "https://images.unsplash.com/photo-1501004318855-b43f69da42c1?w=600&h=400&fit=crop",
+    link: "https://phys.org/news/2026-02-sponge-city-fuels-major-gains.html",
+    linkLabel: "Phys.org — Biodiversity gains from sponge cities",
+    techniques: ["Bioswale network", "Rain gardens", "Biodiversity design"],
+  },
+];
+
+function CaseStudyCard({ study, delay = 0 }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <FadeIn delay={delay}>
+      <div style={{
+        background: "#fff", borderRadius: 16, overflow: "hidden",
+        border: `1px solid ${hover ? COLORS.tealLight : "#e0e0e0"}`,
+        transition: "all 0.3s ease",
+        boxShadow: hover ? "0 8px 32px rgba(11,61,46,0.08)" : "0 2px 8px rgba(0,0,0,0.04)",
+        transform: hover ? "translateY(-3px)" : "none",
+      }}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <div style={{
+          height: 200, background: `linear-gradient(135deg, ${COLORS.deep} 0%, ${COLORS.teal} 100%)`,
+          display: "flex", alignItems: "flex-end", padding: "20px 24px",
+          position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.08,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20c5.5 0 10-4.5 10-10S25.5 0 20 0 10 4.5 10 10s4.5 10 10 10zm0 20c5.5 0 10-4.5 10-10s-4.5-10-10-10-10 4.5-10 10 4.5 10 10 10z' fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{
+              fontFamily: FONTS.display, fontSize: 22, color: "#fff",
+              lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.3)",
+            }}>{study.title}</div>
+            <div style={{
+              fontFamily: FONTS.body, fontSize: 13, color: "rgba(255,255,255,0.8)",
+              marginTop: 4, fontStyle: "italic",
+            }}>{study.subtitle}</div>
+          </div>
+        </div>
+        <div style={{ padding: "20px 24px 24px" }}>
+          <p style={{
+            fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted,
+            lineHeight: 1.7, margin: "0 0 14px",
+          }}>{study.desc}</p>
+          <div style={{
+            background: COLORS.cream, borderRadius: 10, padding: "14px 16px",
+            marginBottom: 16, borderLeft: `3px solid ${COLORS.teal}`,
+          }}>
+            <div style={{
+              fontFamily: FONTS.body, fontSize: 11, fontWeight: 600,
+              color: COLORS.teal, textTransform: "uppercase", letterSpacing: "0.08em",
+              marginBottom: 4,
+            }}>Relevance to Marin City</div>
+            <div style={{
+              fontFamily: FONTS.body, fontSize: 13, color: COLORS.slate, lineHeight: 1.6,
+            }}>{study.relevance}</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+            {study.techniques.map((t, i) => (
+              <Badge key={i} bg={COLORS.mint} color={COLORS.deep}>{t}</Badge>
+            ))}
+          </div>
+          <a href={study.link} target="_blank" rel="noopener noreferrer" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontFamily: FONTS.body, fontSize: 13, fontWeight: 600,
+            color: COLORS.teal, textDecoration: "none",
+            padding: "8px 16px", borderRadius: 8,
+            border: `1px solid ${COLORS.teal}`,
+            transition: "all 0.2s",
+            background: hover ? COLORS.mint : "transparent",
+          }}>
+            {study.linkLabel} <span style={{ fontSize: 14 }}>↗</span>
+          </a>
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+function DataRow({ label, value, sub, highlight }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "baseline",
+      padding: "10px 0", borderBottom: "1px solid #f0ece4",
+    }}>
+      <span style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, flex: 1 }}>{label}</span>
+      <div style={{ textAlign: "right" }}>
+        <span style={{
+          fontFamily: FONTS.body, fontSize: 15, fontWeight: 600,
+          color: highlight ? COLORS.coral : COLORS.slate,
+        }}>{value}</span>
+        {sub && <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, marginTop: 1 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function CompareBar({ label, mcVal, mcPct, countyVal, countyPct, invert }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 4,
+          }}>
+            <div style={{ fontSize: 11, color: COLORS.slate, fontWeight: 600, width: 70, fontFamily: FONTS.body }}>Marin City</div>
+            <div style={{ flex: 1, background: "#e8e4dc", borderRadius: 4, height: 14, overflow: "hidden" }}>
+              <div style={{
+                width: `${mcPct}%`, height: "100%", borderRadius: 4,
+                background: invert ? COLORS.coral : COLORS.teal,
+                transition: "width 0.8s ease",
+              }} />
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, fontFamily: FONTS.body, color: COLORS.slate, minWidth: 60, textAlign: "right" }}>{mcVal}</span>
+          </div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <div style={{ fontSize: 11, color: COLORS.muted, width: 70, fontFamily: FONTS.body }}>Marin Co.</div>
+            <div style={{ flex: 1, background: "#e8e4dc", borderRadius: 4, height: 14, overflow: "hidden" }}>
+              <div style={{
+                width: `${countyPct}%`, height: "100%", borderRadius: 4,
+                background: "#b0b0a8",
+                transition: "width 0.8s ease",
+              }} />
+            </div>
+            <span style={{ fontSize: 12, fontFamily: FONTS.body, color: COLORS.muted, minWidth: 60, textAlign: "right" }}>{countyVal}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityDataTabs() {
+  const [tab, setTab] = useState("demographics");
+  const tabs = [
+    { id: "demographics", label: "Demographics" },
+    { id: "ej", label: "Env. justice (CES)" },
+    { id: "flooding", label: "Flooding & climate" },
+    { id: "housing", label: "Housing" },
+    { id: "usgs", label: "USGS water data" },
+  ];
+
+  return (
+    <FadeIn delay={0.1}>
+      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e0e0e0", overflow: "hidden" }}>
+        <div style={{
+          display: "flex", borderBottom: "1px solid #e8e4dc", overflowX: "auto",
+        }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              fontFamily: FONTS.body, fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
+              color: tab === t.id ? COLORS.teal : COLORS.muted,
+              background: tab === t.id ? COLORS.cream : "transparent",
+              border: "none", borderBottom: tab === t.id ? `2px solid ${COLORS.teal}` : "2px solid transparent",
+              padding: "14px 20px", cursor: "pointer", whiteSpace: "nowrap",
+              transition: "all 0.2s",
+            }}>{t.label}</button>
+          ))}
+        </div>
+        <div style={{ padding: "24px 28px" }}>
+          {tab === "demographics" && (
+            <div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 4 }}>Population and demographics</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>
+                Sources: U.S. Census Bureau 2020 Census, 2024 American Community Survey
+              </div>
+              <DataRow label="Population (2020 census)" value="2,993" sub="Est. 3,195 in 2024" />
+              <DataRow label="Area" value="0.54 sq mi" sub="5,574 people/sq mi" />
+              <DataRow label="Elevation" value="23 feet (7.0 m)" sub="One of lowest in Marin" highlight />
+              <DataRow label="Median age" value="41.4 years" />
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 20, marginBottom: 10 }}>
+                Racial and ethnic composition
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, marginBottom: 16 }}>
+                {[
+                  { label: "Black", pct: "31.1%", color: "#6C3483" },
+                  { label: "White", pct: "26.4%", color: "#5D6D7E" },
+                  { label: "Asian", pct: "19.4%", color: "#2E86C1" },
+                  { label: "Hispanic", pct: "15.0%", color: "#D4A017" },
+                  { label: "Multiracial", pct: "7.6%", color: "#27AE60" },
+                  { label: "Native Am./Other", pct: "0.4%", color: "#888" },
+                ].map(r => (
+                  <div key={r.label} style={{
+                    background: COLORS.cream, borderRadius: 8, padding: "10px 12px", textAlign: "center",
+                  }}>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 20, fontWeight: 600, color: r.color }}>{r.pct}</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{r.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+                background: COLORS.cream, borderRadius: 8, padding: "12px 16px",
+                borderLeft: `3px solid ${COLORS.teal}`,
+              }}>
+                Marin City ranks <strong>7th in all of California</strong> for Black residents as a share of population. It was built in 1942 to house WWII Marinship shipyard workers. After the war, African Americans were restricted from moving elsewhere in Marin County, creating the community that persists today.
+              </div>
+            </div>
+          )}
+
+          {tab === "ej" && (
+            <div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 4 }}>CalEnviroScreen (CES) 4.0</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>
+                California's environmental justice screening tool — identifies communities disproportionately burdened by pollution. <a href="https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.teal }}>View on CalEPA ↗</a>
+              </div>
+              <CompareBar label="CalEnviroScreen percentile" mcVal="35th %ile" mcPct={35} countyVal="5–10th %ile" countyPct={7.5} invert />
+              <CompareBar label="Poverty rate" mcVal="16.1%" mcPct={64} countyVal="4.1%" countyPct={16} invert />
+              <CompareBar label="Median household income" mcVal="$68,846" mcPct={46} countyVal="$149,091" countyPct={100} />
+              <div style={{
+                fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+                background: COLORS.cream, borderRadius: 8, padding: "12px 16px",
+                borderLeft: `3px solid ${COLORS.coral}`, marginTop: 16,
+              }}>
+                Marin City's CES score of the <strong>35th percentile</strong> means it is more burdened than 35% of all California census tracts. The rest of Marin County scores between the 5th and 10th percentile. This stark disparity — within one of the wealthiest counties in America — is a hallmark of environmental injustice. Key pollution factors include highway runoff from adjacent Hwy 101, contaminated decommissioned sites, and infrastructure failure.
+              </div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 20, marginBottom: 10 }}>
+                What CES measures
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  { cat: "Pollution burden", items: "Ozone, PM2.5, diesel particulates, pesticides, toxic releases, traffic, cleanup sites, groundwater threats, hazardous waste, impaired water, solid waste" },
+                  { cat: "Population vulnerability", items: "Asthma, low birth weight, cardiovascular disease, poverty, unemployment, housing burden, lack of education, linguistic isolation" },
+                ].map(c => (
+                  <div key={c.cat} style={{
+                    background: COLORS.cream, borderRadius: 8, padding: "12px 14px",
+                  }}>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.slate, marginBottom: 4 }}>{c.cat}</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, lineHeight: 1.5 }}>{c.items}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap",
+              }}>
+                <a href="https://oehha.ca.gov/calenviroscreen" target="_blank" rel="noopener noreferrer" style={{
+                  fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+                  padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.teal}`,
+                }}>CalEnviroScreen map ↗</a>
+                <a href="https://ejscreen.epa.gov/mapper/" target="_blank" rel="noopener noreferrer" style={{
+                  fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+                  padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.teal}`,
+                }}>EPA EJScreen ↗</a>
+                <a href="https://datausa.io/profile/geo/marin-city-ca/" target="_blank" rel="noopener noreferrer" style={{
+                  fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+                  padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.teal}`,
+                }}>Data USA profile ↗</a>
+              </div>
+            </div>
+          )}
+
+          {tab === "flooding" && (
+            <div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 4 }}>Flooding and climate vulnerability</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>
+                Sources: Marin City Stormwater Plan 2025, KQED, Marin County Flood Control District
+              </div>
+              <DataRow label="Years of documented flooding" value="80+" highlight />
+              <DataRow label="Last major drainage upgrade" value="Mid-1990s" sub="When Gateway Shopping Center built" highlight />
+              <DataRow label="Drainage outlets to Richardson Bay" value="1" sub="Single tidal gate, regularly blocked by sand/debris" highlight />
+              <DataRow label="Projected increase in atmospheric river intensity" value="Up to 37%" sub="By end of century (2022 study)" highlight />
+              <DataRow label="Flood Control Zone" value="Zone 3" sub="Richardson Bay" />
+              <DataRow label="Army Corps funding commitment" value="$13.5 million" sub="Formalized September 2024" />
+              <DataRow label="Stormwater Plan cost" value="$785,000" sub="Funded by Zone 3 budget" />
+              <DataRow label="Caltrans Hwy 101 project (estimated)" value="~$2 billion" sub="Includes sea level rise adaptations" />
+              <div style={{
+                fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+                background: COLORS.cream, borderRadius: 8, padding: "12px 16px",
+                borderLeft: `3px solid ${COLORS.coral}`, marginTop: 16,
+              }}>
+                UC Berkeley's Kristina Hill has called Marin City <strong>"a bathtub with only one drain"</strong> — the watershed funnels all water from the Marin Headlands through the community into a single pond, which connects to Richardson Bay through one small pipe and tide gate. During high tides, the system backs up and floods the sole entrance/exit at Drake Avenue and Donahue Street.
+              </div>
+              <div style={{
+                display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap",
+              }}>
+                <a href="https://storage.googleapis.com/proudcity/marinwatershedprogramca/2025/12/57b48465-marincitystormwaterplanoctober2025.pdf" target="_blank" rel="noopener noreferrer" style={{
+                  fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+                  padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.teal}`,
+                }}>Stormwater Plan 2025 ↗</a>
+                <a href="https://www.kqed.org/science/1994454/marin-city-has-long-felt-its-flooding-woes-were-neglected-thats-about-to-change" target="_blank" rel="noopener noreferrer" style={{
+                  fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+                  padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.teal}`,
+                }}>KQED coverage ↗</a>
+              </div>
+            </div>
+          )}
+
+          {tab === "housing" && (
+            <div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 4 }}>Housing and infrastructure</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>
+                Source: U.S. Census Bureau, 2024 American Community Survey
+              </div>
+              <CompareBar label="Renter-occupied housing" mcVal="61.3%" mcPct={61.3} countyVal="~37%" countyPct={37} invert />
+              <CompareBar label="Owner-occupied housing" mcVal="38.7%" mcPct={38.7} countyVal="~63%" countyPct={63} />
+              <DataRow label="Total households" value="1,466" sub="Average 2 members each" />
+              <DataRow label="Median year built" value="1971" sub="Aging infrastructure" highlight />
+              <DataRow label="Vacant housing units" value="5.2%" />
+              <DataRow label="Median renter income" value="$45,417" sub="2022 Census data" />
+              <DataRow label="Rent-to-income ratio" value="35.3%" sub="Above 30% = 'housing burdened'" highlight />
+              <DataRow label="Average commute" value="22.4 min" sub="Most drive alone" />
+              <div style={{
+                fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+                background: COLORS.cream, borderRadius: 8, padding: "12px 16px",
+                borderLeft: `3px solid ${COLORS.warm}`, marginTop: 16,
+              }}>
+                With 61% renters, a 35% rent-to-income ratio, and median construction dating to 1971, Marin City's housing stock is both <strong>financially strained and physically vulnerable</strong> to flooding. Sponge city retrofits at Golden Gate Village and other housing areas serve a dual purpose: flood protection and quality-of-life improvements for residents who can't afford to move.
+              </div>
+            </div>
+          )}
+
+          {tab === "usgs" && (
+            <div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 4 }}>USGS water data for the nation</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>
+                The U.S. Geological Survey operates over 13,500 monitoring stations nationwide, collecting real-time data on streamflow, groundwater, water quality, and precipitation — critical for understanding flood risk and designing sponge city solutions.
+              </div>
+              <a href="https://dashboard.waterdata.usgs.gov/app/nwd/en/?region=lower48&aoi=default" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block", marginBottom: 20 }}>
+                <div style={{
+                  background: "linear-gradient(135deg, #0B3D2E 0%, #1A5276 100%)",
+                  borderRadius: 12, padding: "24px 28px", position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{ position: "relative", zIndex: 1 }}>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>USGS National Water Dashboard</div>
+                    <div style={{ fontFamily: FONTS.display, fontSize: 22, color: "#fff", marginBottom: 8 }}>View real-time water conditions across the US</div>
+                    <div style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, marginBottom: 12 }}>Interactive map with streamflow, lake/reservoir levels, groundwater, precipitation, and flood forecasts from 13,500+ stations nationwide.</div>
+                    <span style={{ display: "inline-block", padding: "8px 16px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 600, border: "1px solid rgba(255,255,255,0.25)" }}>Open dashboard ↗</span>
+                  </div>
+                </div>
+              </a>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginBottom: 10 }}>Marin City watershed data</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
+                {[
+                  { label: "Hydrologic unit", value: "18050005", sub: "San Francisco Bay" },
+                  { label: "Watershed area", value: "~0.9 sq mi", sub: "Marin City drainage" },
+                  { label: "Primary outlet", value: "Richardson Bay", sub: "Via single tide gate" },
+                  { label: "Tidal influence", value: "High", sub: "Bay tide controls drainage" },
+                  { label: "Groundwater", value: "Near surface", sub: "Due to Bay proximity" },
+                  { label: "Flood zone", value: "Zone 3", sub: "Marin Co. Flood Control" },
+                ].map((d, i) => (
+                  <div key={i} style={{ background: COLORS.cream, borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 15, fontWeight: 600, color: COLORS.teal }}>{d.value}</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 11, fontWeight: 600, color: COLORS.slate, marginTop: 2 }}>{d.label}</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 10, color: COLORS.muted }}>{d.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginBottom: 10 }}>Nearest USGS monitoring stations</div>
+              <div style={{ display: "grid", gap: 8, marginBottom: 20 }}>
+                {[
+                  { id: "11460000", name: "Corte Madera Creek at Ross", type: "Streamflow", dist: "~6 mi N", link: "https://waterdata.usgs.gov/monitoring-location/11460000/" },
+                  { id: "11460400", name: "Arroyo Corte Madera del Presidio", type: "Streamflow", dist: "~3 mi NW", link: "https://waterdata.usgs.gov/monitoring-location/11460400/" },
+                  { id: "11459500", name: "Novato Creek near Novato", type: "Streamflow", dist: "~14 mi N", link: "https://waterdata.usgs.gov/monitoring-location/11459500/" },
+                  { id: "375607122264701", name: "SF Bay (Richmond Bridge)", type: "Tidal / water quality", dist: "~8 mi E", link: "https://waterdata.usgs.gov/monitoring-location/375607122264701/" },
+                ].map((s, i) => (
+                  <a key={i} href={s.link} target="_blank" rel="noopener noreferrer" style={{
+                    display: "flex", alignItems: "center", gap: 12, textDecoration: "none",
+                    background: COLORS.cream, borderRadius: 8, padding: "10px 14px",
+                    border: "1px solid transparent", transition: "border-color 0.2s",
+                  }} onMouseEnter={e => e.currentTarget.style.borderColor = COLORS.tealLight} onMouseLeave={e => e.currentTarget.style.borderColor = "transparent"}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff", flexShrink: 0 }}>📍</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate }}>{s.name}</div>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted }}>{s.type} · {s.dist} · Station {s.id}</div>
+                    </div>
+                    <span style={{ fontSize: 13, color: COLORS.teal, fontWeight: 600 }}>View ↗</span>
+                  </a>
+                ))}
+              </div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginBottom: 10 }}>USGS tools and resources</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 20 }}>
+                {[
+                  { title: "National Water Dashboard", desc: "Real-time conditions from 13,500+ stations with flood and drought layers.", link: "https://dashboard.waterdata.usgs.gov/app/nwd/en/" },
+                  { title: "NWIS Mapper", desc: "Find any monitoring station by location, site number, or watershed.", link: "https://maps.waterdata.usgs.gov/" },
+                  { title: "Water Services API", desc: "REST API for instantaneous, daily, and statistical water data.", link: "https://waterservices.usgs.gov/" },
+                  { title: "CA Water Science Center", desc: "California-specific data, models, and research from USGS.", link: "https://www.usgs.gov/centers/california-water-science-center/data" },
+                  { title: "StreamStats", desc: "Estimate streamflow statistics and drainage areas for any US location.", link: "https://streamstats.usgs.gov/ss/" },
+                  { title: "Flood Inundation Mapping", desc: "Interactive flood extent maps at various water levels.", link: "https://www.usgs.gov/mission-areas/water-resources/science/flood-inundation-mapping-fim-program" },
+                ].map((r, i) => (
+                  <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" style={{
+                    display: "block", textDecoration: "none", background: "#fff", borderRadius: 10, padding: "12px 14px",
+                    border: "1px solid #e8e8e8", transition: "border-color 0.2s",
+                  }} onMouseEnter={e => e.currentTarget.style.borderColor = COLORS.tealLight} onMouseLeave={e => e.currentTarget.style.borderColor = "#e8e8e8"}>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.teal, marginBottom: 3 }}>{r.title} ↗</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, lineHeight: 1.5 }}>{r.desc}</div>
+                  </a>
+                ))}
+              </div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6, background: COLORS.cream, borderRadius: 8, padding: "12px 16px", borderLeft: `3px solid ${COLORS.coral}` }}>
+                <strong>No USGS monitoring in the watershed:</strong> Marin City currently has no dedicated USGS monitoring station within its watershed — a critical data gap. Without continuous water level, flow, and precipitation data, it's impossible to properly calibrate sponge city designs or measure their effectiveness. <strong><a href="https://spire.com/weather-climate" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.teal }}>Spire Weather & Climate</a></strong> can fill this gap with satellite-powered monitoring using radio occultation, soil moisture sensing (down to 100m resolution with a 40-year archive), and high-resolution 3km weather forecasts — covering Marin City from space where ground stations don't exist. Alex is coordinating with Teresa and Peter at Spire to establish storm pattern tracking for the area.
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <a href="https://spire.com/weather-climate" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block" }}>
+                  <div style={{
+                    background: "linear-gradient(135deg, #1a1a2e 0%, #c0392b 100%)",
+                    borderRadius: 12, padding: "20px 24px", position: "relative", overflow: "hidden",
+                  }}>
+                    <div style={{ position: "relative", zIndex: 1 }}>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Technology partner</div>
+                      <div style={{ fontFamily: FONTS.display, fontSize: 20, color: "#fff", marginBottom: 6 }}>Spire Weather & Climate</div>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.5, marginBottom: 10 }}>
+                        Space-powered weather intelligence from a satellite constellation covering every location on Earth 100x per day. Spire's soil moisture insights, high-resolution forecasts, and radio occultation data can provide the continuous monitoring Marin City's watershed needs — where no ground station exists.
+                      </div>
+                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
+                        <span>🛰 Satellite constellation</span>
+                        <span>🌧 3km resolution forecasts</span>
+                        <span>🌱 100m soil moisture</span>
+                        <span>📡 Radio occultation</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+const ACTION_STEPS = [
+  {
+    phase: "This week",
+    color: "#C0392B",
+    bg: "#FBEAEA",
+    items: [
+      { action: "Download the Marin City Stormwater Plan 2025 final report", detail: "Read the full report to understand the existing analysis, proposed solutions, and stakeholder landscape. This is the foundation everything else builds on.", link: "https://storage.googleapis.com/proudcity/marinwatershedprogramca/2025/12/57b48465-marincitystormwaterplanoctober2025.pdf", linkLabel: "Download report" },
+      { action: "Contact Terrie Green at Marin City Climate Resilience & Health Justice", detail: "Terrie is the community anchor for flood advocacy. Introduce the sponge city concept and ask how it complements the work her organization is already doing. Frame this as additive, not replacing existing efforts.", who: "Terrie Green" },
+      { action: "Reach out to Teresa and Peter at Spire Weather & Climate", detail: "Initiate the conversation about satellite-based storm pattern tracking and soil moisture monitoring for the Richardson Bay watershed. Ask about accessing their Weather API for a proof-of-concept community dashboard and their soil moisture historical data for the area.", who: "Teresa & Peter, Spire" },
+      { action: "Walk the watershed — document flood hotspots with photos and GPS", detail: "Physically walk from the Marin Headlands down through Drake Avenue, Donahue Street, past the pond to Richardson Bay. Photograph the Drake/Donahue intersection, the tide gate, the pond, drainage infrastructure, and any areas showing flood damage or poor drainage. Tag photos with GPS coordinates." },
+      { action: "Join the Marin City Community Services District mailing list", detail: "The CSD is the local governance body. Getting on their radar and attending a board meeting is essential for community legitimacy.", link: "https://marincitycsd.com/", linkLabel: "Visit CSD" },
+    ],
+  },
+  {
+    phase: "Within 30 days",
+    color: "#D4A017",
+    bg: "#FDF2E3",
+    items: [
+      { action: "Request a meeting with Marin County Flood Control District (Zone 3)", detail: "Present the sponge city concept as a complement to their stormwater plan. Ask about the Army Corps $13.5M timeline, what the current design plans include, and where there's room to incorporate green infrastructure.", who: "Flood Control District staff" },
+      { action: "Run a USGS StreamStats drainage analysis for the watershed", detail: "Use the free StreamStats tool to generate drainage area boundaries, flow statistics, and basin characteristics for Marin City's watershed. This gives you engineering-grade data to support your proposals.", link: "https://streamstats.usgs.gov/ss/", linkLabel: "Open StreamStats" },
+      { action: "Connect with UC Berkeley's Kristina Hill", detail: "Professor Hill coined the 'bathtub with one drain' description and has studied Marin City's flooding extensively. She could be an academic advisor to the project and lend research credibility to grant applications.", who: "Prof. Kristina Hill, UC Berkeley" },
+      { action: "Attend the next Stormwater Plan task force meeting", detail: "The task force includes the CSD, Caltrans, Coast Miwok Tribal Council, Federated Indians of Graton Rancheria, NPS, and Marin Water. This is where decisions are made. Present a 5-minute sponge city overview and offer to contribute." },
+      { action: "Begin Spire soil moisture baseline analysis", detail: "Work with Teresa and Peter to pull Spire's historical soil moisture data for the Marin City area. The 40-year archive can show how soil saturation levels have changed over time and establish the pre-intervention baseline needed to measure sponge city effectiveness." },
+      { action: "Identify 2-3 quick-win pilot sites for immediate action", detail: "Pick sites that are visible, low-cost, and community-owned: MLK Academy schoolyard, George Rocky Graham Park, or the CSD building. These pilots build visible momentum and demonstrate the concept before larger investments." },
+    ],
+  },
+  {
+    phase: "Within 90 days",
+    color: "#1A5276",
+    bg: "#E0EEF6",
+    items: [
+      { action: "Present the sponge city plan to the Community Services District board", detail: "Prepare a 15-minute presentation using this website as a visual aid. Include the China case studies, the interactive map, the community data, and the pilot site proposals. Ask for a formal endorsement or letter of support." },
+      { action: "Submit a letter of interest to the Army Corps of Engineers", detail: "The $13.5M commitment is the biggest near-term funding source. A letter of interest asking how sponge city principles can be integrated into their flood solution design shows proactive engagement and could shape the project scope." },
+      { action: "Research and apply for EPA Environmental Justice grants", detail: "Marin City's CES score (35th percentile in one of the wealthiest counties) makes it a strong candidate for EJ grants. Focus on the EJ Collaborative Problem-Solving and EJ Government-to-Government programs.", link: "https://www.epa.gov/environmentaljustice/environmental-justice-grants-funding-and-technical-assistance", linkLabel: "EPA EJ grants" },
+      { action: "Draft a partnership MOU with Spire Weather & Climate", detail: "Formalize the monitoring arrangement. An MOU covering satellite-based soil moisture monitoring, storm tracking, and weather API access for a community dashboard gives the project technical credibility and a named technology partner." },
+      { action: "Contact Caltrans about the Highway 101 sea level rise project", detail: "The ~$2 billion Hwy 101 reconstruction is the biggest infrastructure project coming to Marin City's doorstep. Engage early to advocate for sponge city principles — permeable surfaces, floodable greenways, living levees — to be integrated into the design.", who: "Caltrans District 4" },
+      { action: "Organize a community walk-through of proposed intervention sites", detail: "Invite residents, task force members, CSD board, and Spire contacts to walk all 12 proposed sites. Use printouts of the map from this website. Let people see the locations, ask questions, and give feedback. Community buy-in is the project's foundation." },
+      { action: "Engage Coast Miwok Tribal Council on historical wetland knowledge", detail: "The original wetlands that were paved over are part of Coast Miwok ancestral land. Their knowledge of pre-development water patterns is invaluable for designing restorations that align with the natural watershed, and their involvement strengthens the project's cultural foundation." },
+    ],
+  },
+  {
+    phase: "6-12 months",
+    color: COLORS.teal,
+    bg: COLORS.mint,
+    items: [
+      { action: "Launch first pilot installation — rain garden network at a community site", detail: "Based on the quick-win site selected, design and install a visible rain garden network. Document everything — before/after photos, soil moisture readings from Spire, drainage measurements. This becomes the proof of concept for larger interventions." },
+      { action: "Establish a real-time community water dashboard", detail: "Using Spire's Weather API and any available USGS data, build a simple web dashboard showing precipitation forecasts, soil moisture levels, tide conditions, and sponge infrastructure performance. Make it publicly accessible so the community can see their watershed in real time." },
+      { action: "Publish a formal sponge city master plan for Marin City", detail: "Synthesize all the analysis, community input, Spire data, and pilot results into a comprehensive master plan document. This becomes the reference for all future grant applications, agency coordination, and community decision-making." },
+      { action: "Apply for FEMA Building Resilient Infrastructure and Communities (BRIC) grant", detail: "BRIC grants fund pre-disaster hazard mitigation projects. A sponge city master plan with pilot data, Spire monitoring, and community endorsement is a strong application.", link: "https://www.fema.gov/grants/mitigation/building-resilient-infrastructure-communities", linkLabel: "FEMA BRIC" },
+      { action: "Build a paid local maintenance corps", detail: "Following Wuhan's community stewardship model, create paid positions for Marin City residents to maintain sponge infrastructure — rain gardens, bioswales, permeable surfaces, monitoring equipment. This creates local jobs and ensures long-term sustainability." },
+      { action: "Begin design work on the Gateway pond constructed wetland", detail: "With baseline data from Spire, community endorsement, and pilot results in hand, commission professional design work for the largest intervention: converting the Gateway pond into a multi-stage constructed wetland. Coordinate with the Army Corps project timeline." },
+    ],
+  },
+];
+
+function ActionChecklist() {
+  const [checks, setChecks] = useState({});
+  const [expandedPhase, setExpandedPhase] = useState("This week");
+
+  const toggle = (key) => setChecks(prev => ({ ...prev, [key]: !prev[key] }));
+  const phaseProgress = (phase) => {
+    const items = ACTION_STEPS.find(p => p.phase === phase)?.items || [];
+    const done = items.filter((_, i) => checks[`${phase}-${i}`]).length;
+    return { done, total: items.length };
+  };
+
+  return (
+    <FadeIn delay={0.1}>
+      <div style={{ display: "grid", gap: 16 }}>
+        {ACTION_STEPS.map((phase) => {
+          const isOpen = expandedPhase === phase.phase;
+          const prog = phaseProgress(phase.phase);
+          return (
+            <div key={phase.phase} style={{
+              background: "#fff", borderRadius: 16, border: "1px solid #e0e0e0", overflow: "hidden",
+            }}>
+              <div
+                onClick={() => setExpandedPhase(isOpen ? null : phase.phase)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "18px 24px", cursor: "pointer",
+                  background: isOpen ? phase.bg : "transparent",
+                  transition: "background 0.2s",
+                }}
+              >
+                <div style={{
+                  width: 10, height: 10, borderRadius: "50%",
+                  background: phase.color, flexShrink: 0,
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: FONTS.display, fontSize: 18, color: COLORS.slate }}>{phase.phase}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted }}>{phase.items.length} actions · {prog.done} completed</div>
+                </div>
+                <div style={{
+                  width: 60, height: 6, borderRadius: 3, background: "#e8e4dc", overflow: "hidden",
+                }}>
+                  <div style={{
+                    width: `${prog.total > 0 ? (prog.done / prog.total) * 100 : 0}%`,
+                    height: "100%", borderRadius: 3, background: phase.color,
+                    transition: "width 0.3s ease",
+                  }} />
+                </div>
+                <span style={{
+                  fontSize: 18, color: COLORS.muted, transition: "transform 0.3s",
+                  transform: isOpen ? "rotate(180deg)" : "none",
+                }}>▾</span>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "0 24px 20px" }}>
+                  {phase.items.map((item, i) => {
+                    const key = `${phase.phase}-${i}`;
+                    const done = checks[key];
+                    return (
+                      <div key={i} style={{
+                        display: "flex", gap: 14, padding: "16px 0",
+                        borderBottom: i < phase.items.length - 1 ? "1px solid #f0ece4" : "none",
+                        opacity: done ? 0.55 : 1, transition: "opacity 0.3s",
+                      }}>
+                        <div
+                          onClick={() => toggle(key)}
+                          style={{
+                            width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 2,
+                            border: done ? "none" : `2px solid ${phase.color}`,
+                            background: done ? phase.color : "transparent",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            cursor: "pointer", transition: "all 0.2s",
+                            fontSize: 13, color: "#fff",
+                          }}
+                        >{done ? "✓" : ""}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            fontFamily: FONTS.body, fontSize: 14, fontWeight: 600,
+                            color: COLORS.slate, lineHeight: 1.4,
+                            textDecoration: done ? "line-through" : "none",
+                          }}>{item.action}</div>
+                          <div style={{
+                            fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted,
+                            lineHeight: 1.6, marginTop: 6,
+                          }}>{item.detail}</div>
+                          <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            {item.who && (
+                              <span style={{
+                                fontFamily: FONTS.body, fontSize: 11, fontWeight: 600,
+                                color: phase.color, background: phase.bg,
+                                padding: "3px 10px", borderRadius: 12,
+                              }}>👤 {item.who}</span>
+                            )}
+                            {item.link && (
+                              <a href={item.link} target="_blank" rel="noopener noreferrer" style={{
+                                fontFamily: FONTS.body, fontSize: 11, fontWeight: 600,
+                                color: COLORS.teal, textDecoration: "none",
+                                padding: "3px 10px", borderRadius: 12,
+                                border: `1px solid ${COLORS.teal}`,
+                              }}>{item.linkLabel || "Link"} ↗</a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </FadeIn>
+  );
+}
+
+const BUILD_PHASES = [
+  {
+    phase: "Design and engineering",
+    timeline: "Weeks 1–4",
+    who: "professional",
+    icon: "📐",
+    steps: [
+      "Survey each site — measure street grade, soil permeability, existing drainage, utility locations",
+      "Map the water flow path and calculate runoff volume the bioswale must handle (85th-percentile storm)",
+      "Specify dimensions (2–4 ft deep, 4–8 ft wide), engineered soil mix (60% sand, 20% compost, 20% topsoil), and gravel underdrain",
+      "Select native California plant palette — deer grass, sedge, California fuchsia, coast live oak — drought-tolerant, no irrigation after year one",
+    ],
+    community: "Community input on which sites to prioritize and what the finished bioswales should look like. Residents know where flooding is worst.",
+  },
+  {
+    phase: "Permitting and approvals",
+    timeline: "Weeks 4–8",
+    who: "professional",
+    icon: "📋",
+    steps: [
+      "Encroachment permits from Marin County for work in public right-of-way (Donahue Street, Drake Avenue)",
+      "Community Services District approval for work on community-owned land",
+      "School board approval for MLK Academy site",
+      "Environmental review if required for wetland-adjacent sites",
+    ],
+    community: "CSD board endorsement and community letters of support accelerate permits. This is where Alex's task force relationships pay off.",
+  },
+  {
+    phase: "Demolition and excavation",
+    timeline: "Weeks 8–10",
+    who: "professional",
+    icon: "🔨",
+    steps: [
+      "Saw-cut existing concrete curbs and sidewalk sections where bioswales will go",
+      "Excavate trenches to design depth with heavy equipment",
+      "Grade the trench bottom to ensure proper drainage slope",
+      "Haul away demolished concrete and excess soil",
+    ],
+    community: "Volunteers help with site cleanup, debris removal, and keeping the work area organized. Good for organized work crews.",
+  },
+  {
+    phase: "Underdrain and gravel base",
+    timeline: "Weeks 10–12",
+    who: "professional",
+    icon: "🔧",
+    steps: [
+      "Lay filter fabric lining the trench to prevent soil migration",
+      "Install perforated underdrain pipe bedded in washed gravel",
+      "Connect underdrain to existing storm drain system at controlled flow rate",
+      "Backfill with gravel drainage layer to design depth",
+    ],
+    community: "Limited — pipe connections require licensed plumber/contractor. Volunteers can help move and spread gravel under supervision.",
+  },
+  {
+    phase: "Soil layers and grading",
+    timeline: "Weeks 12–13",
+    who: "community",
+    icon: "🌍",
+    steps: [
+      "Fill trenches with engineered soil mix in layers — gravel base already in place",
+      "Spread and rake the sand/compost/topsoil blend to design grade",
+      "Compact gently to prevent settling without over-compacting (which reduces permeability)",
+      "Shape the bioswale profile — gentle slopes on sides, flat bottom for ponding area",
+    ],
+    community: "This is a great community build day. Physical labor (wheelbarrows, shovels, rakes) that doesn't require specialized skills. Organize a Saturday morning crew.",
+  },
+  {
+    phase: "Planting day",
+    timeline: "Weeks 13–14",
+    who: "community",
+    icon: "🌿",
+    steps: [
+      "Lay out plants according to the planting plan — taller species at edges, lower species in the flow path",
+      "Dig individual planting holes and install each plant at the correct depth",
+      "Water in thoroughly to settle soil around roots",
+      "Install temporary irrigation (drip line) for first-year establishment",
+    ],
+    community: "THE community event. Families, kids, school groups, elders — everyone can plant. People who plant their own bioswale come back to maintain it. MLK Academy students planting next to their school creates lasting investment.",
+  },
+  {
+    phase: "Mulch, inlets, and signage",
+    timeline: "Weeks 14–15",
+    who: "mixed",
+    icon: "🪵",
+    steps: [
+      "Spread 3 inches of shredded bark mulch over all planted areas to suppress weeds and retain moisture",
+      "Install curb cuts or inlet stones that direct street water into the bioswale",
+      "Place check dams (small rock berms) inside the bioswale to slow water flow on steeper sections",
+      "Install educational signs designed by community members explaining what the bioswale does",
+    ],
+    community: "Mulching is perfect for volunteers. Students at MLK Academy can design the educational signs. Curb cuts need a contractor.",
+  },
+  {
+    phase: "Monitoring and stewardship",
+    timeline: "Ongoing",
+    who: "community",
+    icon: "📡",
+    steps: [
+      "Install rain gauges and Spire-connected soil moisture sensors at key bioswales",
+      "Set up the community monitoring dashboard displaying real-time water data",
+      "Monthly maintenance: remove trash and debris, pull weeds, replace dead plants, refresh mulch",
+      "Create a paid local maintenance corps — 3-5 part-time positions for Marin City residents",
+    ],
+    community: "Monthly 'Sponge City Saturday' volunteer events for weeding and mulching. Paid maintenance corps creates local jobs. Students monitor rain gauges as part of curriculum.",
+  },
+];
+
+function BuildGuide() {
+  const [openStep, setOpenStep] = useState(0);
+  const whoColors = {
+    professional: { bg: "#E0EEF6", color: "#1A5276", label: "Professional-led" },
+    community: { bg: "#DEF2E6", color: "#1A6B52", label: "Community-led" },
+    mixed: { bg: "#FDF2E3", color: "#8B5E1A", label: "Professional + community" },
+  };
+
+  return (
+    <FadeIn delay={0.1}>
+      <div style={{ display: "grid", gap: 12 }}>
+        {BUILD_PHASES.map((phase, i) => {
+          const isOpen = openStep === i;
+          const w = whoColors[phase.who];
+          return (
+            <div key={i} style={{
+              background: "#fff", borderRadius: 14, border: "1px solid #e0e0e0", overflow: "hidden",
+            }}>
+              <div onClick={() => setOpenStep(isOpen ? -1 : i)} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "16px 20px", cursor: "pointer",
+                background: isOpen ? "#fafaf7" : "transparent",
+                transition: "background 0.2s",
+              }}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{phase.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: FONTS.display, fontSize: 17, color: COLORS.slate }}>{phase.phase}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted }}>{phase.timeline}</div>
+                </div>
+                <span style={{
+                  display: "inline-block", fontSize: 10, fontWeight: 600,
+                  fontFamily: FONTS.body, letterSpacing: "0.06em", textTransform: "uppercase",
+                  padding: "3px 10px", borderRadius: 12, background: w.bg, color: w.color,
+                }}>{w.label}</span>
+                <span style={{
+                  fontSize: 16, color: COLORS.muted, transition: "transform 0.3s",
+                  transform: isOpen ? "rotate(180deg)" : "none",
+                }}>▾</span>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "0 20px 20px" }}>
+                  <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
+                    {phase.steps.map((step, j) => (
+                      <div key={j} style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+                      }}>
+                        <span style={{
+                          width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                          background: COLORS.cream, display: "flex", alignItems: "center",
+                          justifyContent: "center", fontSize: 11, fontWeight: 600,
+                          color: COLORS.slate, marginTop: 2,
+                        }}>{j + 1}</span>
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{
+                    background: COLORS.cream, borderRadius: 10, padding: "12px 16px",
+                    borderLeft: `3px solid ${COLORS.teal}`,
+                  }}>
+                    <div style={{
+                      fontFamily: FONTS.body, fontSize: 11, fontWeight: 600,
+                      color: COLORS.teal, textTransform: "uppercase", letterSpacing: "0.06em",
+                      marginBottom: 3,
+                    }}>Community role</div>
+                    <div style={{
+                      fontFamily: FONTS.body, fontSize: 13, color: COLORS.slate, lineHeight: 1.6,
+                    }}>{phase.community}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>What it costs</div>
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12,
+        }}>
+          {[
+            { site: "Donahue Street bioswale corridor", detail: "~1,500 linear ft, both sides", cost: "$45K – $150K", note: "Fraction of the cost of pipe upsizing" },
+            { site: "Drake Avenue terraced bioswales", detail: "5 terraced stations on hillside", cost: "$200K – $400K", note: "Includes hillside grading" },
+            { site: "MLK Academy schoolyard pilot", detail: "Green roof + permeable schoolyard", cost: "$80K – $120K", note: "High visibility demonstration" },
+            { site: "Golden Gate Village micro-sponge", detail: "Rain barrels, gardens, permeable paths", cost: "$60K – $100K", note: "Distributed across housing complex" },
+          ].map((c, i) => (
+            <div key={i} style={{
+              background: "#fff", borderRadius: 12, padding: "16px 18px",
+              border: "1px solid #e8e8e8",
+            }}>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate }}>{c.site}</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{c.detail}</div>
+              <div style={{ fontFamily: FONTS.display, fontSize: 22, color: COLORS.teal, marginTop: 8 }}>{c.cost}</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{c.note}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>Funding sources</div>
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10,
+        }}>
+          {[
+            { source: "Army Corps of Engineers", amount: "$13.5M committed", status: "Active", link: "" },
+            { source: "EPA Environmental Justice grants", amount: "Up to $1M per project", status: "Apply", link: "https://www.epa.gov/environmentaljustice/environmental-justice-grants-funding-and-technical-assistance" },
+            { source: "FEMA BRIC grants", amount: "Up to $50M per project", status: "Apply", link: "https://www.fema.gov/grants/mitigation/building-resilient-infrastructure-communities" },
+            { source: "Marin County Flood Control Zone 3", amount: "Stormwater utility fees", status: "Active", link: "" },
+            { source: "CA Dept of Water Resources", amount: "Various grant programs", status: "Research", link: "" },
+            { source: "Community fundraising", amount: "Pilot site costs", status: "Organize", link: "" },
+          ].map((f, i) => (
+            <div key={i} style={{
+              background: COLORS.cream, borderRadius: 10, padding: "12px 14px",
+            }}>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate }}>{f.source}</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{f.amount}</div>
+              <div style={{
+                display: "inline-block", marginTop: 6, fontSize: 10, fontWeight: 600,
+                fontFamily: FONTS.body, letterSpacing: "0.06em", textTransform: "uppercase",
+                padding: "2px 8px", borderRadius: 10,
+                background: f.status === "Active" ? "#DEF2E6" : f.status === "Apply" ? "#E0EEF6" : "#FDF2E3",
+                color: f.status === "Active" ? "#1A6B52" : f.status === "Apply" ? "#1A5276" : "#8B5E1A",
+              }}>{f.status}</div>
+              {f.link && <a href={f.link} target="_blank" rel="noopener noreferrer" style={{
+                display: "block", marginTop: 6, fontFamily: FONTS.body, fontSize: 11,
+                fontWeight: 600, color: COLORS.teal, textDecoration: "none",
+              }}>Learn more ↗</a>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: 24, background: `linear-gradient(135deg, ${COLORS.deep} 0%, ${COLORS.teal} 100%)`,
+        borderRadius: 16, padding: "24px 28px",
+      }}>
+        <div style={{ fontFamily: FONTS.display, fontSize: 20, color: "#fff", marginBottom: 10 }}>Sponge City Saturdays</div>
+        <p style={{ fontFamily: FONTS.body, fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0 }}>
+          Once the bioswales are built, monthly community maintenance events keep them working and keep residents connected to their flood infrastructure. Weeding, mulching, monitoring rain gauges, and checking inlet stones — the work is light and the gathering is social. Portland, Philadelphia, and other green infrastructure cities have shown this model builds lasting community stewardship. For Marin City, creating 3–5 paid part-time maintenance positions for local residents adds economic benefit alongside environmental protection.
+        </p>
+      </div>
+    </FadeIn>
+  );
+}
+
+const BUILD_PHASES = [
+  {
+    phase: "Design and engineering",
+    timeline: "Weeks 1–4",
+    icon: "📐",
+    color: "#1A5276",
+    bg: "#E0EEF6",
+    steps: [
+      { task: "Survey each site — measure street grade, soil permeability, drainage, and utility locations", who: "pro", detail: "A civil engineer maps water flow paths and calculates runoff volume the bioswale needs to handle." },
+      { task: "Calculate bioswale dimensions based on 85th-percentile storm capacity", who: "pro", detail: "Designed to completely handle 85% of all storm events. Typically 2–4 feet deep, 4–8 feet wide." },
+      { task: "Specify the engineered soil mix", who: "pro", detail: "Usually 60% sand, 20% compost, 20% topsoil for optimal drainage and plant health." },
+      { task: "Select native California plant palette", who: "both", detail: "Deer grass, sedge, California fuchsia, coast live oak — drought-tolerant, no irrigation needed after first year. Community input on aesthetics." },
+      { task: "Pull Spire historical soil moisture data for baseline", who: "pro", detail: "40-year archive establishes pre-intervention conditions to measure effectiveness against." },
+    ],
+  },
+  {
+    phase: "Permitting and approvals",
+    timeline: "Weeks 4–8",
+    icon: "📋",
+    color: "#8B5E1A",
+    bg: "#FDF2E3",
+    steps: [
+      { task: "Obtain encroachment permits from Marin County for street work", who: "pro", detail: "Required for any work on public roads like Donahue Street and Drake Avenue." },
+      { task: "Secure Community Services District board approval", who: "community", detail: "The CSD governs community-owned land. This is where Alex's earlier outreach and presentation pay off." },
+      { task: "Get school board approval for MLK Academy site", who: "both", detail: "For the green roof and permeable schoolyard pilot." },
+      { task: "Coordinate with Flood Control District on integration with gray infrastructure", who: "pro", detail: "Ensure bioswale outflows connect properly to the drainage system being upgraded." },
+    ],
+  },
+  {
+    phase: "Site preparation",
+    timeline: "Weeks 8–10",
+    icon: "🚧",
+    color: "#922B21",
+    bg: "#FBEAEA",
+    steps: [
+      { task: "Saw-cut existing concrete curbs and sidewalk sections", who: "pro", detail: "Precision cuts where bioswales will be installed. Professional crew with concrete saws." },
+      { task: "Excavate trenches to design depth", who: "pro", detail: "Heavy equipment for main excavation. Typically 3–4 feet deep." },
+      { task: "Remove debris and clean up excavation sites", who: "community", detail: "Volunteers can haul debris, clean edges, and prepare sites for the next phase." },
+      { task: "Mark utility locations and verify clearances", who: "pro", detail: "Critical safety step — gas, water, sewer, electric, and telecom lines must be located and avoided." },
+    ],
+  },
+  {
+    phase: "Construction — community build days",
+    timeline: "Weeks 10–14",
+    icon: "🌱",
+    color: COLORS.teal,
+    bg: COLORS.mint,
+    steps: [
+      { task: "Install underdrain — perforated pipe in gravel bed with filter fabric", who: "pro", detail: "This pipe slowly releases captured water into the storm drain system at a controlled rate." },
+      { task: "Fill gravel base layer", who: "community", detail: "Physical labor — wheelbarrows, shovels, rakes. Great community build day activity." },
+      { task: "Add engineered soil mix in layers", who: "community", detail: "Volunteers spread and level the sand/compost/topsoil blend. No specialized skills required." },
+      { task: "Plant native plants according to the planting plan", who: "community", detail: "The best community activity. Families, kids, school groups, elders — everyone can plant. People feel ownership over what they planted." },
+      { task: "Spread mulch over all planted areas", who: "community", detail: "3–4 inches of mulch retains moisture, suppresses weeds, and protects soil. Easy volunteer work." },
+      { task: "Install curb cuts and inlet stones", who: "pro", detail: "Carefully cut openings that allow street water to flow into the bioswale. Contractor work." },
+      { task: "Install educational signage", who: "community", detail: "MLK Academy students can design signs explaining what the bioswale does and how it works." },
+      { task: "Set up rain gauges and Spire monitoring sensors", who: "both", detail: "Simple monitoring equipment connected to the community dashboard. Students can help install and will track data." },
+    ],
+  },
+  {
+    phase: "Ongoing stewardship",
+    timeline: "Permanent",
+    icon: "🤝",
+    color: "#6C3483",
+    bg: "#EEEDFE",
+    steps: [
+      { task: "Create a paid local maintenance corps (3–5 part-time positions)", who: "community", detail: "Marin City residents trained in green infrastructure maintenance. Funded through stormwater fees, grants, or Army Corps budget. Local jobs." },
+      { task: "Monthly 'Sponge City Saturday' volunteer events", who: "community", detail: "Community members spend a morning weeding, mulching, and monitoring bioswales. Proven model from Portland and Philadelphia." },
+      { task: "Remove trash and debris from inlet stones weekly", who: "community", detail: "Blocked inlets prevent water from entering the bioswale. Quick, simple check anyone can do." },
+      { task: "Weed and replace dead plants (especially first 2 years)", who: "community", detail: "Native plants need establishment care. After year 2, they're largely self-sustaining." },
+      { task: "Monitor Spire dashboard for performance tracking", who: "both", detail: "Compare soil moisture, runoff volumes, and flood events against the pre-intervention baseline. Build the evidence for expansion." },
+      { task: "Refresh mulch annually", who: "community", detail: "Once a year, add a fresh layer of mulch. Perfect annual community event." },
+    ],
+  },
+];
+
+function BuildGuide() {
+  const [openPhase, setOpenPhase] = useState("Construction — community build days");
+
+  return (
+    <FadeIn delay={0.1}>
+      <div style={{ display: "grid", gap: 14 }}>
+        {BUILD_PHASES.map((phase) => {
+          const isOpen = openPhase === phase.phase;
+          const proCount = phase.steps.filter(s => s.who === "pro").length;
+          const commCount = phase.steps.filter(s => s.who === "community").length;
+          const bothCount = phase.steps.filter(s => s.who === "both").length;
+          return (
+            <div key={phase.phase} style={{
+              background: "#fff", borderRadius: 16, border: "1px solid #e0e0e0", overflow: "hidden",
+            }}>
+              <div
+                onClick={() => setOpenPhase(isOpen ? null : phase.phase)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "16px 22px", cursor: "pointer",
+                  background: isOpen ? phase.bg : "transparent",
+                  transition: "background 0.2s",
+                }}
+              >
+                <span style={{ fontSize: 22 }}>{phase.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: FONTS.display, fontSize: 17, color: COLORS.slate }}>{phase.phase}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted }}>
+                    {phase.timeline} · {phase.steps.length} steps
+                    {commCount > 0 && <span style={{ color: COLORS.teal, fontWeight: 600 }}> · {commCount + bothCount} community</span>}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 18, color: COLORS.muted, transition: "transform 0.3s",
+                  transform: isOpen ? "rotate(180deg)" : "none",
+                }}>▾</span>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "0 22px 18px" }}>
+                  {phase.steps.map((step, i) => {
+                    const whoStyle = {
+                      pro: { label: "Professional", bg: "#E0EEF6", color: "#1A5276" },
+                      community: { label: "Community", bg: COLORS.mint, color: COLORS.deep },
+                      both: { label: "Pro + community", bg: "#FDF2E3", color: "#8B5E1A" },
+                    }[step.who];
+                    return (
+                      <div key={i} style={{
+                        display: "flex", gap: 12, padding: "14px 0",
+                        borderBottom: i < phase.steps.length - 1 ? "1px solid #f0ece4" : "none",
+                      }}>
+                        <div style={{
+                          width: 24, height: 24, borderRadius: "50%", flexShrink: 0, marginTop: 2,
+                          background: phase.bg, display: "flex", alignItems: "center", justifyContent: "center",
+                          fontFamily: FONTS.body, fontSize: 11, fontWeight: 600, color: phase.color,
+                        }}>{i + 1}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: COLORS.slate, lineHeight: 1.4 }}>{step.task}</div>
+                          <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6, marginTop: 4 }}>{step.detail}</div>
+                          <span style={{
+                            display: "inline-block", marginTop: 6,
+                            fontFamily: FONTS.body, fontSize: 11, fontWeight: 600,
+                            padding: "2px 10px", borderRadius: 10,
+                            background: whoStyle.bg, color: whoStyle.color,
+                          }}>{whoStyle.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 12 }}>What it costs</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: "18px 20px",
+            border: "1px solid #e8e8e8",
+          }}>
+            <div style={{ fontFamily: FONTS.body, fontSize: 24, fontWeight: 600, color: COLORS.teal }}>$15–$50</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 2 }}>per linear foot</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 4, lineHeight: 1.5 }}>Typical street bioswale installation cost, depending on complexity and site conditions.</div>
+          </div>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: "18px 20px",
+            border: "1px solid #e8e8e8",
+          }}>
+            <div style={{ fontFamily: FONTS.body, fontSize: 24, fontWeight: 600, color: COLORS.teal }}>$45K–$150K</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 2 }}>Donahue Street corridor</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 4, lineHeight: 1.5 }}>Both sides, ~1,500 linear feet. A fraction of what pipe upsizing costs.</div>
+          </div>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: "18px 20px",
+            border: "1px solid #e8e8e8",
+          }}>
+            <div style={{ fontFamily: FONTS.body, fontSize: 24, fontWeight: 600, color: COLORS.teal }}>$200K–$400K</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 2 }}>Drake Ave terraced bioswales</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 4, lineHeight: 1.5 }}>Five hillside stations. Higher cost due to grading, but high impact on upstream retention.</div>
+          </div>
+        </div>
+        <div style={{
+          marginTop: 16, fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6,
+          background: COLORS.cream, borderRadius: 8, padding: "12px 16px",
+          borderLeft: `3px solid ${COLORS.teal}`,
+        }}>
+          <strong style={{ color: COLORS.slate }}>Eligible for federal funding:</strong> All bioswale costs qualify for EPA Environmental Justice grants, FEMA BRIC (Building Resilient Infrastructure and Communities) funding, and could potentially be folded into the Army Corps $13.5M project scope. The community labor component further reduces costs and strengthens grant applications by demonstrating local engagement.
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+function SpongeCityMarinCity() {
+  const [activeSection, setActiveSection] = useState(null);
+
+  return (
+    <div style={{ background: COLORS.light, minHeight: "100vh", fontFamily: FONTS.body }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Libre+Franklin:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+      {/* NAV */}
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 100, padding: "14px 24px",
+        background: "rgba(250,250,247,0.85)", backdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(0,0,0,0.06)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%", background: COLORS.teal,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16,
+          }}>💧</div>
+          <span style={{ fontFamily: FONTS.display, fontSize: 16, color: COLORS.deep }}>Sponge City Marin</span>
+        </div>
+        <div style={{ display: "flex", gap: 20, fontSize: 13, fontWeight: 500 }}>
+          {["Problem", "Solution", "China", "Data", "Plan", "Map", "Sites", "Vision", "Build", "Analysis", "Engage", "Actions"].map(s => (
+            <a key={s} href={`#${s.toLowerCase()}`} style={{
+              color: COLORS.muted, textDecoration: "none",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={e => e.target.style.color = COLORS.teal}
+            onMouseLeave={e => e.target.style.color = COLORS.muted}
+            >{s}</a>
+          ))}
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section style={{
+        position: "relative", overflow: "hidden",
+        background: `linear-gradient(160deg, ${COLORS.deep} 0%, ${COLORS.teal} 50%, ${COLORS.tealLight} 100%)`,
+        padding: "100px 24px 80px", textAlign: "center",
+      }}>
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.06,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        <FadeIn>
+          <Badge bg="rgba(255,255,255,0.15)" color="#fff">Community resilience project</Badge>
+          <h1 style={{
+            fontFamily: FONTS.display, fontSize: "clamp(36px, 6vw, 56px)",
+            color: "#fff", margin: "24px auto 20px", maxWidth: 640,
+            lineHeight: 1.15, fontWeight: 400,
+          }}>
+            Sponge City<br />Marin City
+          </h1>
+          <p style={{
+            fontFamily: FONTS.body, fontSize: 18, color: "rgba(255,255,255,0.8)",
+            maxWidth: 520, margin: "0 auto 36px", lineHeight: 1.6, fontWeight: 300,
+          }}>
+            Bringing China's breakthrough sponge city innovations to one of the Bay Area's most flood-vulnerable communities.
+          </p>
+          <div style={{
+            display: "inline-flex", gap: 12, flexWrap: "wrap", justifyContent: "center",
+          }}>
+            <a href="#plan" style={{
+              display: "inline-block", padding: "14px 32px", borderRadius: 40,
+              background: "#fff", color: COLORS.deep, fontFamily: FONTS.body,
+              fontSize: 15, fontWeight: 600, textDecoration: "none",
+              transition: "transform 0.2s",
+            }}>See the plan →</a>
+            <a href="#problem" style={{
+              display: "inline-block", padding: "14px 32px", borderRadius: 40,
+              background: "rgba(255,255,255,0.12)", color: "#fff", fontFamily: FONTS.body,
+              fontSize: 15, fontWeight: 500, textDecoration: "none", border: "1px solid rgba(255,255,255,0.25)",
+            }}>Learn more</a>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* STATS BAR */}
+      <section style={{
+        maxWidth: 800, margin: "-40px auto 0", padding: "0 24px", position: "relative", zIndex: 10,
+      }}>
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12,
+        }}>
+          <StatCard number="80+" label="Years of flooding in Marin City" delay={0} />
+          <StatCard number="70%" label="Runoff reduction possible with sponge techniques" delay={0.1} />
+          <StatCard number="$13.5M" label="Army Corps commitment for flood solutions" delay={0.2} />
+          <StatCard number="50%" label="Plant biodiversity increase in China's sponge cities" delay={0.3} />
+        </div>
+      </section>
+
+      {/* PROBLEM */}
+      <section id="problem" style={{ maxWidth: 760, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.sand} color={COLORS.coral}>The challenge</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 20px", lineHeight: 1.2,
+          }}>A bathtub with only one drain</h2>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 20 }}>
+            Marin City sits in a bowl-shaped watershed, sandwiched between the steep Marin Headlands and Highway 101. Built on filled wetlands in the 1940s to house WWII shipyard workers, the community's natural stormwater absorption was paved over decades ago. Today, a single small pipe and tide gate connect the neighborhood's only holding pond to Richardson Bay.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 20 }}>
+            When storms hit — especially during high tides — the drainage system overwhelms. Water backs up and floods the Drake Avenue and Donahue Street intersection, blocking the <em>only entrance and exit</em> to Marin City. First responders can't get in. Residents can't get out. The water is contaminated with highway runoff.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.2}>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 20 }}>
+            Climate change is projected to make atmospheric rivers up to 37% wetter by century's end. Sea level rise is already bringing king tides that flood Marin City even without rain. And as community leader Terrie Green has pointed out: other flood-prone areas in Marin County received infrastructure upgrades while Marin City — a historically Black community — was left behind.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.25}>
+          <blockquote style={{
+            margin: "32px 0", padding: "24px 28px", borderLeft: `4px solid ${COLORS.coral}`,
+            background: COLORS.cream, borderRadius: "0 12px 12px 0",
+          }}>
+            <p style={{
+              fontFamily: FONTS.display, fontStyle: "italic", fontSize: 20,
+              color: COLORS.slate, lineHeight: 1.5, margin: 0,
+            }}>
+              "We're at a place in Marin City where we're saying enough is enough. It comes to race. It comes down to it."
+            </p>
+            <cite style={{
+              display: "block", fontFamily: FONTS.body, fontSize: 13,
+              color: COLORS.muted, marginTop: 12, fontStyle: "normal",
+            }}>— Terrie Green, Marin City Climate Resilience and Health Justice</cite>
+          </blockquote>
+        </FadeIn>
+      </section>
+
+      {/* SOLUTION */}
+      <section id="solution" style={{ background: COLORS.cream, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg={COLORS.mint} color={COLORS.deep}>The innovation</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 20px", lineHeight: 1.2,
+            }}>What is a sponge city?</h2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 32 }}>
+              In 2013, China launched the world's most ambitious urban water management program: the Sponge City Initiative. Across 30 pilot cities, from Shenzhen to Wuhan to Chongqing, China is replacing impervious concrete infrastructure with nature-based systems that absorb, store, filter, and slowly release rainwater — like a sponge. The goal: retain 70% of annual rainfall on-site rather than rushing it into drains. The results have been remarkable — not just reduced flooding, but cleaner water, richer biodiversity, cooler temperatures, and more livable neighborhoods.
+            </p>
+          </FadeIn>
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14,
+          }}>
+            <TechCard icon="🌿" title="Rain gardens" desc="Planted depressions that collect and filter stormwater runoff. In Wuxi, 1,973 rain garden installations boosted urban plant diversity by over 50%." delay={0.15} />
+            <TechCard icon="🧱" title="Permeable pavement" desc="Surfaces that let water pass through instead of sheeting off. Chongqing's Bishan District uses permeable bricks that let the ground 'breathe.'" delay={0.2} />
+            <TechCard icon="🌊" title="Bioswales" desc="Vegetated channels along streets that slow and filter stormwater. When networked across a corridor, they reduce runoff by up to 70%." delay={0.25} />
+            <TechCard icon="🦆" title="Constructed wetlands" desc="Engineered ecosystems that store, filter, and slowly release water. Sanya transformed an old landfill into a mangrove wetland park." delay={0.3} />
+            <TechCard icon="🏫" title="Green roofs" desc="Vegetated rooftops that absorb rainfall at the source. Chongqing turned school rooftops into lush green spaces that double as outdoor classrooms." delay={0.35} />
+            <TechCard icon="📡" title="Smart flood sensors" desc="IoT-based real-time monitoring of water levels. Wuhan uses AI-integrated stormwater management for early warning and adaptive response." delay={0.4} />
+          </div>
+        </div>
+      </section>
+
+      {/* CHINA CASE STUDIES */}
+      <section id="china" style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.sand} color={COLORS.warm}>China in action</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>What they built — and what we can learn</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 36, maxWidth: 640 }}>
+            These Chinese projects demonstrate what sponge city solutions look like in practice. Each one addresses challenges similar to Marin City's — and each card explains exactly how it applies to our community. Click the links to explore the full projects.
+          </p>
+        </FadeIn>
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20,
+        }}>
+          {CHINA_CASES.map((study, i) => (
+            <CaseStudyCard key={i} study={study} delay={i * 0.08} />
+          ))}
+        </div>
+        <FadeIn delay={0.5}>
+          <div style={{
+            marginTop: 32, padding: "20px 24px", borderRadius: 12,
+            background: COLORS.cream, border: `1px solid ${COLORS.sand}`,
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 24 }}>📚</span>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: COLORS.slate }}>Want to go deeper?</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginTop: 2 }}>
+                Explore Kongjian Yu's full portfolio of sponge city projects at Turenscape, or read the comprehensive Shenzhen case study.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a href="https://www.turenscape.com/en/project" target="_blank" rel="noopener noreferrer" style={{
+                fontFamily: FONTS.body, fontSize: 13, fontWeight: 600,
+                color: COLORS.teal, textDecoration: "none",
+                padding: "8px 16px", borderRadius: 8,
+                border: `1px solid ${COLORS.teal}`,
+              }}>Turenscape projects ↗</a>
+              <a href="https://thediplomat.com/2023/01/becoming-a-sponge-city-at-shenzhen-speed/" target="_blank" rel="noopener noreferrer" style={{
+                fontFamily: FONTS.body, fontSize: 13, fontWeight: 600,
+                color: COLORS.teal, textDecoration: "none",
+                padding: "8px 16px", borderRadius: 8,
+                border: `1px solid ${COLORS.teal}`,
+              }}>Shenzhen deep dive ↗</a>
+              <a href="https://ughw.org/blue-green-infrastructure/" target="_blank" rel="noopener noreferrer" style={{
+                fontFamily: FONTS.body, fontSize: 13, fontWeight: 600,
+                color: COLORS.teal, textDecoration: "none",
+                padding: "8px 16px", borderRadius: 8,
+                border: `1px solid ${COLORS.teal}`,
+              }}>Case studies collection ↗</a>
+            </div>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* WHY MARIN CITY */}
+      <section style={{
+        maxWidth: 760, margin: "0 auto", padding: "80px 24px 40px",
+      }}>
+        <FadeIn>
+          <Badge bg={COLORS.sand} color={COLORS.warm}>Perfect fit</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 32, color: COLORS.slate,
+            margin: "16px 0 20px", lineHeight: 1.2,
+          }}>Why this works for Marin City</h2>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 20 }}>
+            Marin City's flooding challenges are strikingly similar to those China's Sponge City program was designed to solve: a paved-over watershed with no natural retention, steep terrain that accelerates runoff, a single overwhelmed drainage outlet, and compounding tidal pressure. The key insight from China's experience is that scattered, small-scale green infrastructure isn't enough — the approach must be <strong>watershed-scale and systemic</strong>, with interventions at every stage from hilltop to shoreline.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8 }}>
+            This project also aligns with major investments already in motion: the U.S. Army Corps of Engineers' $13.5 million flood solution commitment, the Marin County Flood Control District's new pump station and stormwater upgrades, and Caltrans' multi-billion-dollar Highway 101 sea level rise project. Sponge city principles can be woven into all of these efforts, creating a unified approach rather than disconnected fixes.
+          </p>
+        </FadeIn>
+      </section>
+
+      {/* COMMUNITY DATA */}
+      <section id="data" style={{ background: COLORS.cream, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg={COLORS.mint} color={COLORS.deep}>Public data</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 12px", lineHeight: 1.2,
+            }}>Marin City by the numbers</h2>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 28, maxWidth: 640 }}>
+              Census, CalEnviroScreen (CES), and environmental data that paint a picture of a community facing disproportionate environmental burdens — and why sponge city investment here is both urgent and just.
+            </p>
+          </FadeIn>
+          <CommunityDataTabs />
+        </div>
+      </section>
+
+      {/* PLAN */}
+      <section id="plan" style={{ background: COLORS.cream, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg={COLORS.mint} color={COLORS.deep}>The approach</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 12px", lineHeight: 1.2,
+            }}>A four-phase plan</h2>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 36 }}>
+              From community assessment through long-term stewardship — working with the watershed, not against it.
+            </p>
+          </FadeIn>
+          <div style={{ display: "grid", gap: 16 }}>
+            <PhaseCard num={1} color={COLORS.teal} title="Community mapping and baseline" timeline="Months 1–3"
+              desc="Partner with Marin City Climate Resilience and Health Justice and the existing Stormwater Plan task force. Map flood hotspots, document impervious surface coverage, and engage Coast Miwok Tribal Council on historical wetland knowledge."
+              tags={["Community-led", "Wuxi model", "Stormwater plan 2025"]} delay={0.1} />
+            <PhaseCard num={2} color={COLORS.sage} title="Upper watershed interventions" timeline="Months 3–12"
+              desc="Slow water at the source before it reaches the bowl. Install bioswales along hillside streets, permeable paving on parking areas, and rain gardens at schools and community buildings. Target: capture small-to-medium storms upstream."
+              tags={["Shenzhen pilot", "Bioswale network", "Headlands runoff"]} delay={0.15} />
+            <PhaseCard num={3} color={COLORS.warm} title="Lower watershed and pond retrofit" timeline="Months 6–18"
+              desc="Redesign the Gateway pond area as a constructed wetland with staged retention cells. Coordinate with Caltrans' Highway 101 project to integrate permeable surfaces and floodable greenways along the bike path corridor."
+              tags={["Chongqing model", "Constructed wetland", "Caltrans coordination"]} delay={0.2} />
+            <PhaseCard num={4} color={COLORS.coral} title="Integration and stewardship" timeline="Months 12–24+"
+              desc="Establish community-managed monitoring with smart flood sensors. Build a paid local maintenance corps for ongoing green infrastructure upkeep. Connect to FEMA grants and Army Corps funding for long-term sustainability."
+              tags={["Wuhan stewardship", "Local jobs", "Army Corps $13.5M"]} delay={0.25} />
+          </div>
+        </div>
+      </section>
+
+      {/* TERRAIN MAP — THE BASIN */}
+      <section id="map" style={{ background: COLORS.cream, padding: "80px 24px 60px" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg={COLORS.mint} color={COLORS.deep}>The terrain</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 12px", lineHeight: 1.2,
+            }}>A basin with one drain</h2>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 28, maxWidth: 640 }}>
+              This cross-section shows why Marin City floods. The community sits in a bowl-shaped basin between the steep Marin Headlands (300+ feet) to the west and Highway 101 to the east. All rainfall funnels downhill into a basin floor at just 23 feet elevation — where former wetlands were paved over in the 1940s. A single small pipe and tide gate under Highway 101 is the only outlet to Richardson Bay.
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div style={{
+              borderRadius: 16, overflow: "hidden",
+              border: "1px solid #e0e0e0",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              background: "linear-gradient(180deg, #dce8f0 0%, #e8f0e8 40%, #d4c9a8 100%)",
+              padding: "0",
+            }}>
+              <svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" style={{ display: "block", width: "100%" }}>
+                <defs>
+                  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#b8d4e8" />
+                    <stop offset="100%" stopColor="#dce8f0" />
+                  </linearGradient>
+                  <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#5b9ebd" />
+                    <stop offset="100%" stopColor="#3d7a9e" />
+                  </linearGradient>
+                  <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#5a7a4a" />
+                    <stop offset="60%" stopColor="#6b8a5a" />
+                    <stop offset="100%" stopColor="#8aaa6a" />
+                  </linearGradient>
+                  <linearGradient id="urban" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a0a098" />
+                    <stop offset="100%" stopColor="#b8b0a0" />
+                  </linearGradient>
+                  <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#555" />
+                    <stop offset="100%" stopColor="#666" />
+                  </linearGradient>
+                  <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6" fill="#2E86C1" />
+                  </marker>
+                </defs>
+
+                {/* Sky */}
+                <rect x="0" y="0" width="900" height="420" fill="url(#sky)" />
+
+                {/* Richardson Bay water */}
+                <path d="M720,300 Q760,298 800,295 L900,290 L900,420 L720,420 Z" fill="url(#water)" opacity="0.8" />
+                <path d="M730,310 Q770,305 810,300" stroke="#fff" strokeWidth="1" fill="none" opacity="0.4" />
+                <path d="M750,320 Q790,315 830,310" stroke="#fff" strokeWidth="0.8" fill="none" opacity="0.3" />
+
+                {/* Marin Headlands — steep western hillside */}
+                <path d="M0,420 L0,100 Q40,90 80,105 Q120,130 160,170 Q200,210 240,260 Q270,285 300,300 L300,420 Z" fill="url(#hill)" />
+                {/* Hill texture lines */}
+                <path d="M30,150 Q60,145 90,160" stroke="#4a6a3a" strokeWidth="0.8" fill="none" opacity="0.4" />
+                <path d="M50,180 Q80,175 120,195" stroke="#4a6a3a" strokeWidth="0.8" fill="none" opacity="0.4" />
+                <path d="M70,210 Q110,205 150,225" stroke="#4a6a3a" strokeWidth="0.8" fill="none" opacity="0.4" />
+                {/* Trees on hillside */}
+                <circle cx="60" cy="130" r="8" fill="#4a6a3a" opacity="0.6" />
+                <circle cx="45" cy="140" r="6" fill="#5a7a4a" opacity="0.5" />
+                <circle cx="90" cy="155" r="9" fill="#4a6a3a" opacity="0.6" />
+                <circle cx="75" cy="148" r="7" fill="#5a7a4a" opacity="0.5" />
+                <circle cx="120" cy="180" r="8" fill="#4a6a3a" opacity="0.5" />
+                <circle cx="140" cy="195" r="7" fill="#5a7a4a" opacity="0.5" />
+                <circle cx="170" cy="220" r="6" fill="#4a6a3a" opacity="0.4" />
+
+                {/* Basin floor — Marin City (paved, urban) */}
+                <path d="M300,300 Q350,305 400,308 Q450,310 500,310 Q550,310 600,308 Q640,305 660,300 L660,420 L300,420 Z" fill="url(#urban)" />
+
+                {/* Buildings in basin */}
+                <rect x="320" y="280" width="18" height="22" fill="#888" rx="1" />
+                <rect x="345" y="275" width="22" height="27" fill="#7a7a7a" rx="1" />
+                <rect x="375" y="282" width="16" height="20" fill="#898989" rx="1" />
+                <rect x="400" y="278" width="20" height="24" fill="#808080" rx="1" />
+                <rect x="430" y="280" width="24" height="22" fill="#858585" rx="1" />
+                <rect x="465" y="276" width="18" height="26" fill="#7e7e7e" rx="1" />
+                <rect x="492" y="282" width="22" height="20" fill="#888" rx="1" />
+                <rect x="525" y="278" width="16" height="24" fill="#838383" rx="1" />
+                <rect x="550" y="280" width="20" height="22" fill="#878787" rx="1" />
+                <rect x="580" y="283" width="18" height="19" fill="#8a8a8a" rx="1" />
+                <rect x="608" y="279" width="22" height="23" fill="#808080" rx="1" />
+                <rect x="638" y="282" width="16" height="20" fill="#858585" rx="1" />
+
+                {/* Pond — small holding area */}
+                <ellipse cx="640" cy="308" rx="25" ry="8" fill="#5b9ebd" opacity="0.7" />
+
+                {/* Highway 101 — the dam wall */}
+                <rect x="665" y="270" width="22" height="150" fill="url(#road)" rx="2" />
+                <line x1="676" y1="275" x2="676" y2="420" stroke="#eee" strokeWidth="1.5" strokeDasharray="8 6" />
+
+                {/* Tiny tide gate opening */}
+                <rect x="672" y="303" width="8" height="6" fill="#5b9ebd" opacity="0.8" />
+
+                {/* Eastern slope to bay */}
+                <path d="M687,300 Q700,298 720,300 L720,420 L687,420 Z" fill="#b8b0a0" />
+
+                {/* Rain arrows falling into basin */}
+                <g opacity="0.35">
+                  <line x1="200" y1="30" x2="350" y2="250" stroke="#2E86C1" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+                  <line x1="300" y1="20" x2="420" y2="240" stroke="#2E86C1" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+                  <line x1="400" y1="15" x2="480" y2="240" stroke="#2E86C1" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+                  <line x1="500" y1="20" x2="540" y2="240" stroke="#2E86C1" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+                  <line x1="600" y1="25" x2="600" y2="245" stroke="#2E86C1" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+                </g>
+
+                {/* Runoff arrows down hillside */}
+                <g opacity="0.5">
+                  <path d="M150,185 Q200,230 300,295" stroke="#2E86C1" strokeWidth="2" fill="none" strokeDasharray="4 3" markerEnd="url(#arrowBlue)" />
+                  <path d="M100,165 Q180,220 280,290" stroke="#2E86C1" strokeWidth="1.5" fill="none" strokeDasharray="4 3" markerEnd="url(#arrowBlue)" />
+                </g>
+
+                {/* Elevation labels */}
+                <text x="25" y="88" fill="#3a5a2a" fontSize="11" fontWeight="600" fontFamily="sans-serif">300+ ft</text>
+                <text x="360" y="330" fill="#555" fontSize="11" fontWeight="600" fontFamily="sans-serif">23 ft elevation</text>
+
+                {/* Feature labels */}
+                <text x="30" y="55" fill="#2a4a1a" fontSize="14" fontWeight="700" fontFamily="sans-serif">Marin</text>
+                <text x="30" y="72" fill="#2a4a1a" fontSize="14" fontWeight="700" fontFamily="sans-serif">Headlands</text>
+
+                <text x="410" y="360" fill="#444" fontSize="15" fontWeight="700" fontFamily="sans-serif" textAnchor="middle">MARIN CITY</text>
+                <text x="410" y="377" fill="#666" fontSize="11" fontFamily="sans-serif" textAnchor="middle">Former wetlands, paved over 1940s</text>
+
+                <text x="630" y="340" fill="#3d7a9e" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">Pond</text>
+
+                {/* Hwy 101 label */}
+                <text x="676" y="265" fill="#333" fontSize="10" fontWeight="700" fontFamily="sans-serif" textAnchor="middle" transform="rotate(-90 676 265)" dy="3">HWY 101</text>
+
+                {/* Tide gate label */}
+                <line x1="676" y1="306" x2="710" y2="280" stroke="#C0392B" strokeWidth="1" />
+                <text x="712" y="278" fill="#C0392B" fontSize="10" fontWeight="600" fontFamily="sans-serif">Single tide gate</text>
+                <text x="712" y="290" fill="#C0392B" fontSize="9" fontFamily="sans-serif">(only outlet)</text>
+
+                {/* Richardson Bay label */}
+                <text x="810" y="320" fill="#2a6a8e" fontSize="13" fontWeight="700" fontFamily="sans-serif" textAnchor="middle">Richardson</text>
+                <text x="810" y="335" fill="#2a6a8e" fontSize="13" fontWeight="700" fontFamily="sans-serif" textAnchor="middle">Bay</text>
+
+                {/* Rain label */}
+                <text x="400" y="45" fill="#2E86C1" fontSize="12" fontWeight="600" fontFamily="sans-serif" textAnchor="middle" opacity="0.6">🌧 All rainfall funnels into the basin</text>
+
+                {/* Cross-section label */}
+                <text x="450" y="410" fill="#999" fontSize="10" fontFamily="sans-serif" textAnchor="middle">Cross-section view — west to east through Marin City watershed</text>
+              </svg>
+            </div>
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: 12, marginTop: 16,
+            }}>
+              <div style={{
+                background: "#fff", borderRadius: 10, padding: "14px 16px",
+                border: "1px solid #e8e8e8",
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.slate, fontFamily: FONTS.body }}>⛰ West — Marin Headlands</div>
+                <div style={{ fontSize: 12, color: COLORS.muted, fontFamily: FONTS.body, marginTop: 3, lineHeight: 1.5 }}>Steep terrain rises 300+ feet. Rain hits hillsides and rushes downhill with no natural retention — all of it flows into Marin City.</div>
+              </div>
+              <div style={{
+                background: "#fff", borderRadius: 10, padding: "14px 16px",
+                border: "1px solid #e8e8e8",
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.slate, fontFamily: FONTS.body }}>🏘 Center — the basin floor</div>
+                <div style={{ fontSize: 12, color: COLORS.muted, fontFamily: FONTS.body, marginTop: 3, lineHeight: 1.5 }}>Elevation just 23 feet. Former wetlands paved over in the 1940s. Water collects here with nowhere to go during storms and high tides.</div>
+              </div>
+              <div style={{
+                background: "#fff", borderRadius: 10, padding: "14px 16px",
+                border: "1px solid #e8e8e8",
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.coral, fontFamily: FONTS.body }}>🚧 East — Highway 101</div>
+                <div style={{ fontSize: 12, color: COLORS.muted, fontFamily: FONTS.body, marginTop: 3, lineHeight: 1.5 }}>The highway acts as a dam wall. A single small pipe and tide gate under 101 is the only outlet to Richardson Bay. It blocks the only entrance/exit when flooded.</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 32 }}>
+              <div style={{ fontFamily: FONTS.display, fontSize: 22, color: COLORS.slate, marginBottom: 8 }}>Intervention sites on terrain</div>
+              <p style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.6, marginBottom: 16 }}>
+                Click any numbered marker to see what's currently impacted and the proposed sponge city solution. Zoom out to see the full basin topography.
+              </p>
+              <TerrainMap />
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* INTERVENTION SITES */}
+      <section id="sites" style={{ maxWidth: 760, margin: "0 auto", padding: "80px 24px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.sand} color={COLORS.coral}>On the ground</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>Intervention sites</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 12 }}>
+            Twelve specific locations across the watershed — from the hilltops down to the shoreline. Tap any site to see the full proposal and its Chinese model.
+          </p>
+        </FadeIn>
+
+        <div style={{ display: "grid", gap: 10 }}>
+          <SiteCard num={1} name="Drake & Donahue intersection" zone="critical"
+            desc="The single entrance/exit to Marin City — floods and becomes impassable during storms. Install permeable pavement, curbside bioswales, a subsurface detention cell, and IoT flood sensors for real-time water level monitoring and early warning."
+            origin="Wuhan smart flood management system" delay={0.08} />
+          <SiteCard num={2} name="Gateway pond — constructed wetland" zone="infrastructure"
+            desc="The heart of the flooding problem. Retrofit this privately-owned stormwater holding pond as a multi-stage constructed wetland with phased retention cells, native riparian planting, and expanded capacity. Coordinate with Army Corps $13.5M project for pump station and second culvert under Highway 101."
+            origin="Sanya mangrove park (Turenscape)" delay={0.1} />
+          <SiteCard num={3} name="Richardson Bay shoreline — living levee" zone="infrastructure"
+            desc="Transform the bike path corridor into a vegetated flood barrier that absorbs tidal surge while providing habitat. Restore tidal wetlands along the shoreline edge to buffer king tides. Integrates with Caltrans' potential plan to raise Highway 101."
+            origin="Shenzhen Bay Park floodable greenway" delay={0.12} />
+          <SiteCard num={4} name="Tide gate and outfall upgrade" zone="infrastructure"
+            desc="Marin City's single tidal gate fills with sand and debris. Install automated self-cleaning gate mechanism, a second outfall culvert (already in design), and IoT sensors monitoring flow rate, tide level, and debris blockage."
+            origin="Shenzhen drainage monitoring network" delay={0.14} />
+          <SiteCard num={5} name="Manzanita Park & Ride — permeable lot" zone="infrastructure"
+            desc="Caltrans-owned site at the top of the watershed. Convert conventional asphalt to permeable pavement with subsurface detention. This site captures runoff before it enters Marin City — the first line of defense for the upper watershed."
+            origin="Chongqing Bishan District permeable surfaces" delay={0.16} />
+          <SiteCard num={6} name="Donahue Street bioswale corridor" zone="corridor"
+            desc="Continuous vegetated bioswales along both sides of Donahue Street — the main artery carrying hillside runoff to the pond. Linear greening to slow, filter, and absorb stormwater along its primary flow path. Native grasses and sedges for 50%+ biodiversity boost."
+            origin="Shenzhen eco-corridor + Wuxi biodiversity study" delay={0.18} />
+          <SiteCard num={7} name="George Rocky Graham Park — rain gardens" zone="corridor"
+            desc="Convert the park perimeter into a network of rain gardens capturing street runoff before it enters the drainage system. The open play area could incorporate a 'water plaza' — a recreational space that doubles as temporary flood storage during heavy storms."
+            origin="Rotterdam water squares + Wuxi rain garden network" delay={0.2} />
+          <SiteCard num={8} name="MC Arts Gallery — streetscape retrofit" zone="corridor"
+            desc="Commercial streetscape retrofit with permeable sidewalks, tree box filters, and curbside rain gardens. Community arts integration — design rain gardens and bioswales as public art installations, giving the project cultural identity."
+            origin="Chongqing community integration model" delay={0.22} />
+          <SiteCard num={9} name="Drake Avenue — hillside bioswale chain" zone="pilot"
+            desc="Upper watershed intervention — terraced bioswales along Drake Avenue where it climbs into the hillside. These intercept runoff from the Marin Headlands before it accelerates downhill. Native plantings create habitat corridors connecting GGNRA lands to the community."
+            origin="Shenzhen hillside retention systems" delay={0.24} />
+          <SiteCard num={10} name="MLK Academy — green roof + schoolyard sponge" zone="pilot"
+            desc="Pilot site for green roofs and permeable schoolyard surfaces. Educational integration — students monitor rain gauges and participate in maintaining rain gardens. Highly visible community demonstration project."
+            origin="Bishan District school rooftop program, Chongqing" delay={0.26} />
+          <SiteCard num={11} name="Community Services District — green roof" zone="pilot"
+            desc="Green roof on community center and rainwater harvesting cisterns. Community hub becomes a sponge city demonstration site. Collected rainwater reused for landscape irrigation, reducing potable water demand."
+            origin="Wuxi demonstration zone facilities" delay={0.28} />
+          <SiteCard num={12} name="Golden Gate Village — micro-sponge network" zone="pilot"
+            desc="Residential-scale sponge interventions across the housing complex: rain barrels at downspouts, small rain gardens between buildings, permeable walkways and parking areas. Many small interventions adding up to significant retention capacity."
+            origin="Turenscape neighborhood-scale sponge design" delay={0.3} />
+        </div>
+      </section>
+
+      {/* BIOSWALE VISION — ARTIST RENDERINGS */}
+      <section id="vision" style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.mint} color={COLORS.deep}>Community vision</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>Imagine our streets as sponges</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 12 }}>
+            Bioswales are vegetated channels along streets that capture, slow, and filter stormwater instead of letting it rush into overwhelmed drains. They're not just infrastructure — they're community assets: shaded sidewalks, native gardens, wildlife corridors, and cooler streets. Here's what Donahue Street and Drake Avenue could look like.
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.05}>
+          <div style={{
+            fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.7,
+            background: "#fff", borderRadius: 12, padding: "16px 20px", marginBottom: 28,
+            border: "1px solid #e8e8e8",
+          }}>
+            <strong style={{ color: COLORS.slate }}>What is a bioswale?</strong> A shallow, planted channel engineered to handle stormwater. Layers of native plants, soil, gravel, and sometimes a perforated pipe work together to slow water, filter pollutants, and let rainfall soak into the ground. In China's sponge cities, networks of bioswales have reduced street runoff by up to 70%. The goal for Marin City isn't one rain garden here and there — it's transforming entire streets from flood accelerators into flood absorbers.
+          </div>
+        </FadeIn>
+
+        {/* DONAHUE STREET — BEFORE / AFTER */}
+        <FadeIn delay={0.1}>
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 22, color: COLORS.slate, marginBottom: 4 }}>Donahue Street</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, marginBottom: 16 }}>
+              Marin City's main artery — currently channels all hillside runoff straight to the overwhelmed pond.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {/* BEFORE */}
+              <div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.coral, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Today</div>
+                <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid #e0e0e0" }}>
+                  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="graysky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8a9aaa"/><stop offset="100%" stopColor="#b0bac4"/></linearGradient>
+                      <linearGradient id="asphalt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#555"/><stop offset="100%" stopColor="#666"/></linearGradient>
+                      <linearGradient id="sidewalkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#aaa"/><stop offset="100%" stopColor="#999"/></linearGradient>
+                    </defs>
+                    <rect width="400" height="300" fill="url(#graysky)"/>
+                    {/* Buildings — flat, gray */}
+                    <rect x="0" y="60" width="70" height="120" fill="#7a7a7a" rx="2"/>
+                    <rect x="0" y="75" width="65" height="20" fill="#6a6a6a"/>
+                    <rect x="78" y="80" width="55" height="100" fill="#727272" rx="2"/>
+                    <rect x="330" y="55" width="70" height="125" fill="#787878" rx="2"/>
+                    <rect x="335" y="70" width="60" height="18" fill="#6a6a6a"/>
+                    <rect x="270" y="75" width="52" height="105" fill="#757575" rx="2"/>
+                    {/* Sidewalks */}
+                    <rect x="0" y="180" width="145" height="25" fill="url(#sidewalkG)"/>
+                    <rect x="255" y="180" width="145" height="25" fill="url(#sidewalkG)"/>
+                    {/* Road */}
+                    <polygon points="145,180 255,180 310,300 90,300" fill="url(#asphalt)"/>
+                    <line x1="200" y1="190" x2="200" y2="300" stroke="#eee" strokeWidth="2" strokeDasharray="12 8" opacity="0.4"/>
+                    {/* Curbs */}
+                    <line x1="145" y1="180" x2="90" y2="300" stroke="#888" strokeWidth="2"/>
+                    <line x1="255" y1="180" x2="310" y2="300" stroke="#888" strokeWidth="2"/>
+                    {/* Sidewalk extensions */}
+                    <polygon points="0,205 145,205 90,300 0,300" fill="#999"/>
+                    <polygon points="255,205 400,205 400,300 310,300" fill="#999"/>
+                    {/* Water rushing down — blue streaks */}
+                    <path d="M170,190 Q175,220 160,260 Q155,280 140,300" stroke="#2E86C1" strokeWidth="3" fill="none" opacity="0.6"/>
+                    <path d="M195,195 Q198,230 190,265 Q185,285 175,300" stroke="#2E86C1" strokeWidth="4" fill="none" opacity="0.7"/>
+                    <path d="M220,192 Q222,225 225,260 Q228,280 235,300" stroke="#2E86C1" strokeWidth="3" fill="none" opacity="0.6"/>
+                    <path d="M130,220 Q128,250 120,280 Q115,295 105,300" stroke="#2E86C1" strokeWidth="2.5" fill="none" opacity="0.5"/>
+                    <path d="M250,215 Q255,245 265,275 Q270,290 280,300" stroke="#2E86C1" strokeWidth="2.5" fill="none" opacity="0.5"/>
+                    {/* Rain */}
+                    <g opacity="0.3">
+                      <line x1="50" y1="0" x2="45" y2="30" stroke="#5a8aaa" strokeWidth="1.5"/>
+                      <line x1="120" y1="5" x2="115" y2="35" stroke="#5a8aaa" strokeWidth="1.5"/>
+                      <line x1="200" y1="0" x2="195" y2="30" stroke="#5a8aaa" strokeWidth="1.5"/>
+                      <line x1="280" y1="8" x2="275" y2="38" stroke="#5a8aaa" strokeWidth="1.5"/>
+                      <line x1="350" y1="3" x2="345" y2="33" stroke="#5a8aaa" strokeWidth="1.5"/>
+                      <line x1="160" y1="15" x2="155" y2="45" stroke="#5a8aaa" strokeWidth="1.5"/>
+                    </g>
+                    {/* Flooded intersection at bottom */}
+                    <rect x="80" y="285" width="240" height="15" fill="#2E86C1" opacity="0.35" rx="2"/>
+                    {/* Labels */}
+                    <text x="200" y="25" fill="#fff" fontSize="13" fontWeight="700" fontFamily="sans-serif" textAnchor="middle" opacity="0.8">Storm runoff rushes downhill</text>
+                    <text x="200" y="298" fill="#fff" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">Flooding at intersection</text>
+                  </svg>
+                </div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 8, lineHeight: 1.5 }}>
+                  Conventional asphalt and concrete. 100% of rainfall becomes runoff, rushing downhill to the Drake/Donahue intersection where it floods.
+                </div>
+              </div>
+
+              {/* AFTER — WITH BIOSWALES */}
+              <div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, fontWeight: 600, color: COLORS.teal, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>With bioswales</div>
+                <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${COLORS.tealLight}` }}>
+                  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="bluesky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7ab8d8"/><stop offset="100%" stopColor="#b0d8e8"/></linearGradient>
+                      <linearGradient id="swale" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#5a8a4a"/><stop offset="100%" stopColor="#7aaa6a"/></linearGradient>
+                    </defs>
+                    <rect width="400" height="300" fill="url(#bluesky2)"/>
+                    {/* Buildings — warmer tones */}
+                    <rect x="0" y="60" width="70" height="120" fill="#a08a70" rx="2"/>
+                    <rect x="0" y="75" width="65" height="20" fill="#8a7a6a"/>
+                    <rect x="78" y="80" width="55" height="100" fill="#9a8878" rx="2"/>
+                    <rect x="330" y="55" width="70" height="125" fill="#a08a70" rx="2"/>
+                    <rect x="335" y="70" width="60" height="18" fill="#8a7a6a"/>
+                    <rect x="270" y="75" width="52" height="105" fill="#9a8878" rx="2"/>
+                    {/* Green roofs on buildings */}
+                    <rect x="2" y="58" width="66" height="6" fill="#6a9a5a" rx="1"/>
+                    <rect x="80" y="78" width="51" height="5" fill="#6a9a5a" rx="1"/>
+                    <rect x="332" y="53" width="66" height="6" fill="#6a9a5a" rx="1"/>
+                    <rect x="272" y="73" width="48" height="5" fill="#6a9a5a" rx="1"/>
+                    {/* Permeable sidewalks — textured */}
+                    <rect x="0" y="180" width="130" height="25" fill="#c8b898" rx="1"/>
+                    <rect x="270" y="180" width="130" height="25" fill="#c8b898" rx="1"/>
+                    {/* BIOSWALE — LEFT SIDE */}
+                    <polygon points="130,180 145,180 100,300 80,300" fill="url(#swale)"/>
+                    {/* Plants in left bioswale */}
+                    <circle cx="138" cy="190" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="132" cy="200" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="128" cy="215" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="122" cy="232" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="118" cy="248" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="112" cy="262" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="106" cy="278" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="100" cy="292" r="4" fill="#5a8a4a" opacity="0.7"/>
+                    {/* Flowers */}
+                    <circle cx="135" cy="208" r="2.5" fill="#d4a0c0" opacity="0.8"/>
+                    <circle cx="125" cy="240" r="2" fill="#e0c060" opacity="0.8"/>
+                    <circle cx="115" cy="268" r="2.5" fill="#d4a0c0" opacity="0.8"/>
+                    {/* BIOSWALE — RIGHT SIDE */}
+                    <polygon points="255,180 270,180 320,300 300,300" fill="url(#swale)"/>
+                    {/* Plants in right bioswale */}
+                    <circle cx="260" cy="192" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="266" cy="205" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="272" cy="220" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="278" cy="237" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="284" cy="252" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="290" cy="267" r="6" fill="#5a8a4a" opacity="0.7"/>
+                    <circle cx="296" cy="282" r="5" fill="#4a7a3a" opacity="0.8"/>
+                    <circle cx="302" cy="294" r="4" fill="#5a8a4a" opacity="0.7"/>
+                    {/* Flowers right */}
+                    <circle cx="263" cy="212" r="2.5" fill="#e0c060" opacity="0.8"/>
+                    <circle cx="281" cy="245" r="2" fill="#d4a0c0" opacity="0.8"/>
+                    <circle cx="293" cy="275" r="2.5" fill="#e0c060" opacity="0.8"/>
+                    {/* Narrower road */}
+                    <polygon points="145,180 255,180 300,300 100,300" fill="#666" rx="2"/>
+                    <line x1="200" y1="190" x2="200" y2="300" stroke="#eee" strokeWidth="2" strokeDasharray="12 8" opacity="0.3"/>
+                    {/* Water arrows gently entering bioswales */}
+                    <path d="M165,200 Q155,210 140,215" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5" markerEnd="url(#arrowBlue)"/>
+                    <path d="M160,235 Q150,240 130,245" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5"/>
+                    <path d="M155,265 Q145,270 125,272" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5"/>
+                    <path d="M235,205 Q245,212 260,215" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5"/>
+                    <path d="M245,240 Q255,245 275,248" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5"/>
+                    <path d="M250,270 Q260,275 285,278" stroke="#2E86C1" strokeWidth="1.5" fill="none" opacity="0.5"/>
+                    {/* Trees in bioswales */}
+                    <line x1="135" y1="195" x2="135" y2="178" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="135" cy="172" r="10" fill="#4a8a3a" opacity="0.7"/>
+                    <line x1="120" y1="240" x2="120" y2="222" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="120" cy="216" r="9" fill="#4a8a3a" opacity="0.7"/>
+                    <line x1="108" y1="275" x2="108" y2="258" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="108" cy="252" r="9" fill="#4a8a3a" opacity="0.7"/>
+                    <line x1="264" y1="198" x2="264" y2="180" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="264" cy="174" r="10" fill="#4a8a3a" opacity="0.7"/>
+                    <line x1="280" y1="242" x2="280" y2="225" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="280" cy="219" r="9" fill="#4a8a3a" opacity="0.7"/>
+                    <line x1="295" y1="278" x2="295" y2="261" stroke="#5a4a3a" strokeWidth="2"/>
+                    <circle cx="295" cy="255" r="9" fill="#4a8a3a" opacity="0.7"/>
+                    {/* Dry intersection at bottom */}
+                    <text x="200" y="25" fill="#2a6a4a" fontSize="13" fontWeight="700" fontFamily="sans-serif" textAnchor="middle" opacity="0.8">Water absorbed by bioswales</text>
+                    <text x="200" y="298" fill="#2a6a4a" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">Intersection stays clear</text>
+                    {/* Butterfly */}
+                    <g transform="translate(350,140)" opacity="0.6">
+                      <ellipse cx="0" cy="0" rx="4" ry="6" fill="#d4a0c0" transform="rotate(-20)"/>
+                      <ellipse cx="6" cy="0" rx="4" ry="6" fill="#d4a0c0" transform="rotate(20)"/>
+                    </g>
+                  </svg>
+                </div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, marginTop: 8, lineHeight: 1.5 }}>
+                  Continuous bioswales with native plants and trees along both sides. Water flows gently into vegetated channels, is filtered and absorbed. The intersection stays dry.
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* DRAKE AVENUE — TERRACED HILLSIDE */}
+        <FadeIn delay={0.15}>
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 22, color: COLORS.slate, marginBottom: 4 }}>Drake Avenue — hillside terraces</div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, marginBottom: 16 }}>
+              Where the street climbs into the Marin Headlands. Terraced bioswales intercept runoff before it accelerates downhill.
+            </div>
+            <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${COLORS.tealLight}` }}>
+              <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="hillsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7ab8d8"/><stop offset="100%" stopColor="#a0d0e0"/></linearGradient>
+                  <linearGradient id="hillgreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4a7a3a"/><stop offset="100%" stopColor="#6a9a5a"/></linearGradient>
+                </defs>
+                <rect width="800" height="350" fill="url(#hillsky)"/>
+                {/* Hillside slope */}
+                <path d="M0,100 Q100,110 200,145 Q300,180 400,215 Q500,250 600,280 Q700,300 800,310 L800,350 L0,350 Z" fill="#8aaa6a"/>
+                {/* Road going up the hill */}
+                <path d="M780,320 Q700,308 600,285 Q500,258 400,225 Q300,192 200,160 Q100,130 50,118" stroke="#777" strokeWidth="28" fill="none" strokeLinecap="round"/>
+                <path d="M780,320 Q700,308 600,285 Q500,258 400,225 Q300,192 200,160 Q100,130 50,118" stroke="#eee" strokeWidth="1.5" fill="none" strokeDasharray="10 8" opacity="0.3"/>
+                {/* Terraced bioswale 1 — upper */}
+                <path d="M80,125 Q90,120 130,132 Q140,135 150,138" stroke="#2a6a2a" strokeWidth="3" fill="none"/>
+                <rect x="85" y="118" width="60" height="12" fill="#3a7a3a" rx="4" opacity="0.8"/>
+                <circle cx="95" cy="115" r="5" fill="#4a8a3a"/><circle cx="108" cy="113" r="6" fill="#3a7a3a"/><circle cx="122" cy="115" r="5" fill="#4a8a3a"/><circle cx="135" cy="116" r="4" fill="#3a7a3a"/>
+                <line x1="100" y1="112" x2="100" y2="100" stroke="#5a4a3a" strokeWidth="2"/><circle cx="100" cy="95" r="8" fill="#3a7a3a" opacity="0.8"/>
+                <line x1="125" y1="112" x2="125" y2="102" stroke="#5a4a3a" strokeWidth="2"/><circle cx="125" cy="97" r="7" fill="#4a8a3a" opacity="0.8"/>
+                {/* Bioswale 2 */}
+                <rect x="195" y="150" width="70" height="12" fill="#3a7a3a" rx="4" opacity="0.8"/>
+                <circle cx="205" cy="147" r="5" fill="#4a8a3a"/><circle cx="218" cy="145" r="6" fill="#3a7a3a"/><circle cx="232" cy="147" r="5" fill="#4a8a3a"/><circle cx="248" cy="148" r="5" fill="#3a7a3a"/><circle cx="258" cy="149" r="4" fill="#4a8a3a"/>
+                <line x1="215" y1="143" x2="215" y2="130" stroke="#5a4a3a" strokeWidth="2"/><circle cx="215" cy="125" r="9" fill="#3a7a3a" opacity="0.8"/>
+                <line x1="245" y1="145" x2="245" y2="133" stroke="#5a4a3a" strokeWidth="2"/><circle cx="245" cy="128" r="8" fill="#4a8a3a" opacity="0.8"/>
+                <circle cx="225" cy="142" r="2" fill="#e0c060" opacity="0.7"/><circle cx="240" cy="144" r="2" fill="#d4a0c0" opacity="0.7"/>
+                {/* Bioswale 3 */}
+                <rect x="320" y="185" width="75" height="12" fill="#3a7a3a" rx="4" opacity="0.8"/>
+                <circle cx="330" cy="182" r="5" fill="#4a8a3a"/><circle cx="345" cy="180" r="6" fill="#3a7a3a"/><circle cx="360" cy="182" r="5" fill="#4a8a3a"/><circle cx="375" cy="183" r="5" fill="#3a7a3a"/><circle cx="388" cy="184" r="4" fill="#4a8a3a"/>
+                <line x1="340" y1="178" x2="340" y2="164" stroke="#5a4a3a" strokeWidth="2"/><circle cx="340" cy="158" r="9" fill="#3a7a3a" opacity="0.8"/>
+                <line x1="370" y1="180" x2="370" y2="167" stroke="#5a4a3a" strokeWidth="2"/><circle cx="370" cy="162" r="8" fill="#4a8a3a" opacity="0.8"/>
+                {/* Bioswale 4 */}
+                <rect x="450" y="222" width="70" height="12" fill="#3a7a3a" rx="4" opacity="0.8"/>
+                <circle cx="460" cy="219" r="5" fill="#4a8a3a"/><circle cx="475" cy="217" r="6" fill="#3a7a3a"/><circle cx="490" cy="219" r="5" fill="#4a8a3a"/><circle cx="505" cy="220" r="4" fill="#3a7a3a"/>
+                <line x1="470" y1="215" x2="470" y2="202" stroke="#5a4a3a" strokeWidth="2"/><circle cx="470" cy="197" r="8" fill="#3a7a3a" opacity="0.8"/>
+                <line x1="498" y1="216" x2="498" y2="205" stroke="#5a4a3a" strokeWidth="2"/><circle cx="498" cy="200" r="7" fill="#4a8a3a" opacity="0.8"/>
+                <circle cx="480" cy="215" r="2" fill="#d4a0c0" opacity="0.7"/>
+                {/* Bioswale 5 — lower */}
+                <rect x="570" y="258" width="70" height="12" fill="#3a7a3a" rx="4" opacity="0.8"/>
+                <circle cx="580" cy="255" r="5" fill="#4a8a3a"/><circle cx="595" cy="253" r="6" fill="#3a7a3a"/><circle cx="610" cy="255" r="5" fill="#4a8a3a"/><circle cx="625" cy="256" r="4" fill="#3a7a3a"/>
+                <line x1="590" y1="251" x2="590" y2="238" stroke="#5a4a3a" strokeWidth="2"/><circle cx="590" cy="233" r="8" fill="#3a7a3a" opacity="0.8"/>
+                {/* Water being captured at each terrace */}
+                <g opacity="0.4">
+                  <path d="M70,105 Q85,110 95,120" stroke="#2E86C1" strokeWidth="2" fill="none"/>
+                  <path d="M180,138 Q195,143 205,152" stroke="#2E86C1" strokeWidth="2" fill="none"/>
+                  <path d="M305,172 Q320,177 330,187" stroke="#2E86C1" strokeWidth="2" fill="none"/>
+                  <path d="M435,210 Q448,215 458,224" stroke="#2E86C1" strokeWidth="2" fill="none"/>
+                  <path d="M555,246 Q568,251 578,260" stroke="#2E86C1" strokeWidth="2" fill="none"/>
+                </g>
+                {/* Absorption symbols */}
+                <g opacity="0.4" fill="#2E86C1" fontSize="10" fontFamily="sans-serif">
+                  <text x="100" y="138">↓ absorbed</text>
+                  <text x="215" y="170">↓ absorbed</text>
+                  <text x="340" y="205">↓ absorbed</text>
+                  <text x="470" y="242">↓ absorbed</text>
+                  <text x="590" y="278">↓ absorbed</text>
+                </g>
+                {/* Labels */}
+                <text x="50" y="30" fill="#2a5a3a" fontSize="14" fontWeight="700" fontFamily="sans-serif">MARIN HEADLANDS</text>
+                <text x="50" y="48" fill="#2a5a3a" fontSize="11" fontFamily="sans-serif">300+ ft elevation</text>
+                <text x="680" y="330" fill="#555" fontSize="12" fontWeight="700" fontFamily="sans-serif">MARIN CITY</text>
+                <text x="680" y="345" fill="#555" fontSize="10" fontFamily="sans-serif">23 ft</text>
+                <text x="400" y="30" fill="#2a6a4a" fontSize="13" fontWeight="700" fontFamily="sans-serif" textAnchor="middle">Terraced bioswales catch runoff at every level</text>
+                <text x="400" y="48" fill="#2a6a4a" fontSize="11" fontFamily="sans-serif" textAnchor="middle">Each terrace absorbs water before it reaches the next — 70% less reaches the basin</text>
+                {/* Bird */}
+                <path d="M700,60 Q705,55 710,58 Q715,55 720,60" stroke="#555" strokeWidth="1.5" fill="none" opacity="0.4"/>
+                <path d="M720,70 Q725,65 730,68 Q735,65 740,70" stroke="#555" strokeWidth="1.5" fill="none" opacity="0.3"/>
+              </svg>
+            </div>
+            <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, marginTop: 10, lineHeight: 1.6 }}>
+              Five terraced bioswale stations along Drake Avenue, each with native trees, grasses, and wildflowers. Water from the Headlands is intercepted at every level — absorbed, filtered, and slowed before it reaches the next terrace. By the time any remaining runoff reaches the basin floor, up to 70% has been captured. The terraces double as habitat corridors connecting GGNRA parklands to the community.
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.2}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12,
+          }}>
+            {[
+              { icon: "🌿", title: "Native plants", desc: "California native grasses, sedges, and wildflowers that thrive without irrigation and support local pollinators." },
+              { icon: "🌳", title: "Shade canopy", desc: "Street trees in every bioswale provide shade, reduce heat island effects, and make walking more comfortable." },
+              { icon: "🦋", title: "Wildlife corridors", desc: "Connected bioswales create habitat pathways for butterflies, birds, and beneficial insects through the community." },
+              { icon: "💧", title: "70% less runoff", desc: "China's sponge city bioswale networks have demonstrated 70% reduction in stormwater runoff reaching drainage systems." },
+            ].map((b, i) => (
+              <div key={i} style={{
+                background: "#fff", borderRadius: 12, padding: "16px 18px",
+                border: "1px solid #e8e8e8",
+              }}>
+                <span style={{ fontSize: 24 }}>{b.icon}</span>
+                <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 6 }}>{b.title}</div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, lineHeight: 1.5, marginTop: 3 }}>{b.desc}</div>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* COMMUNITY BUILD GUIDE */}
+      <section id="build" style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.mint} color={COLORS.deep}>How we build it</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>Building bioswales — and how the community helps</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 28 }}>
+            Bioswale construction splits roughly 40% professional / 60% community. Professionals handle engineering, permitting, and heavy excavation. The community handles planting, mulching, monitoring, maintenance, and advocacy. When residents build and maintain their own flood infrastructure, they understand it, protect it, and fight for more of it.
+          </p>
+        </FadeIn>
+
+        <BuildGuide />
+      </section>
+
+      {/* COMMUNITY BUILD GUIDE */}
+      <section id="build" style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg={COLORS.mint} color={COLORS.deep}>How to build it</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>Building bioswales — step by step</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 12 }}>
+            The split is roughly 40% professional, 60% community — which is what makes this approach both cost-effective and socially powerful. When residents plant and maintain their own flood infrastructure, they understand it, protect it, and advocate for more of it.
+          </p>
+        </FadeIn>
+        <BuildGuide />
+      </section>
+
+      {/* STORMWATER PLAN ANALYSIS */}
+      <section id="analysis" style={{ background: COLORS.cream, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg="#FBEAEA" color={COLORS.coral}>Critical analysis</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 12px", lineHeight: 1.2,
+            }}>How sponge city completes the Stormwater Plan</h2>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 28 }}>
+              The Marin City Stormwater Plan 2025 identifies the right problems and proposes important infrastructure upgrades. But its solutions are almost entirely gray infrastructure — bigger pipes, pump stations, flood walls. Sponge city principles don't replace that plan; they make it work better by reducing the volume of water the gray infrastructure has to handle.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div style={{
+              background: "#fff", borderRadius: 16, border: "1px solid #e0e0e0",
+              padding: "28px", marginBottom: 20,
+            }}>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.teal, marginBottom: 16 }}>What the Stormwater Plan gets right</div>
+              <div style={{ display: "grid", gap: 12 }}>
+                {[
+                  { title: "Phillips Drive & Drake bypasses to new bay outfalls", desc: "The single most important intervention — solving the 'one drain' problem by creating second and third outlets to Richardson Bay." },
+                  { title: "Permanent pond pump station", desc: "Addresses the reality that gravity drainage alone can't handle high-tide conditions when the bay pushes water back through the tide gate." },
+                  { title: "Drake pipe upsize (3.5' → 4'×5' box culvert)", desc: "Dramatically increases throughput at the worst chokepoint in the system — the pipe that carries water from the basin to the pond." },
+                  { title: "Hillside trail BMPs and trash racks", desc: "Shows some awareness of upstream source control and sediment management, which is a step in the right direction." },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ color: COLORS.teal, fontSize: 16, marginTop: 2, flexShrink: 0 }}>✓</span>
+                    <div>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: COLORS.slate }}>{item.title}</div>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6, marginTop: 2 }}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.15}>
+            <div style={{
+              background: "#fff", borderRadius: 16, border: `1px solid ${COLORS.coral}`,
+              padding: "28px", marginBottom: 20,
+            }}>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.coral, marginBottom: 6 }}>What the plan is missing</div>
+              <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, marginBottom: 16, lineHeight: 1.6 }}>
+                The plan is an "evacuate the water faster" strategy. It does nothing to reduce the volume of water entering the system — and with atmospheric rivers projected to intensify up to 37%, that assumption is already outdated.
+              </div>
+              <div style={{ display: "grid", gap: 16 }}>
+                {[
+                  { gap: "No upstream retention", detail: "The plan upsizes pipes and adds inlets but doesn't slow or store water before it reaches the drainage system. Every storm sends the full volume of hillside runoff into the pipes the county is spending millions to upsize.", sponge: "Bioswales along Donahue Street and Drake Avenue would intercept runoff on the hillsides and reduce peak flows — meaning the new pipes work better and last longer." },
+                  { gap: "No permeable surfaces", detail: "The Gateway Shopping Center parking lot, school grounds, and housing areas remain 100% impervious. Every square foot of conventional pavement sends all rainfall directly into the drainage system.", sponge: "Permeable pavement at even a few key sites (shopping center lot, school grounds, Park & Ride) would reduce the load on all the new infrastructure the plan is building." },
+                  { gap: "No green-gray integration", detail: "The best modern stormwater engineering combines gray infrastructure (pipes, pumps) with green infrastructure (bioswales, rain gardens, wetlands) so each system reduces the burden on the other. The Stormwater Plan treats them as separate.", sponge: "The sponge city approach integrates green and gray — upstream green infrastructure reduces peak flows so downstream gray infrastructure performs better under stress." },
+                  { gap: "Flood wall instead of living levee", detail: "'Replace temporary wall with permanent flood wall' is a hardened barrier approach. It protects what's behind it but pushes water elsewhere and fails catastrophically when overtopped.", sponge: "A living levee along Richardson Bay provides graduated flood protection while creating habitat, community space, and tidal buffering — and degrades gracefully rather than failing suddenly." },
+                  { gap: "No monitoring or adaptive management", detail: "The plan builds infrastructure but doesn't include any system for measuring whether it's working or adapting to changing conditions.", sponge: "Spire satellite monitoring and IoT sensors create a feedback loop — track performance, measure effectiveness, and adapt over time. No USGS station exists in this watershed." },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    background: COLORS.cream, borderRadius: 12, padding: "16px 18px",
+                    borderLeft: `3px solid ${COLORS.coral}`,
+                  }}>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: COLORS.coral, marginBottom: 4 }}>{item.gap}</div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6, marginBottom: 10 }}>{item.detail}</div>
+                    <div style={{
+                      display: "flex", gap: 8, alignItems: "flex-start",
+                      background: "rgba(26,107,82,0.06)", borderRadius: 8, padding: "10px 12px",
+                    }}>
+                      <span style={{ color: COLORS.teal, fontSize: 14, marginTop: 1, flexShrink: 0 }}>🧽</span>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.teal, lineHeight: 1.6, fontWeight: 500 }}>{item.sponge}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div style={{
+              background: `linear-gradient(135deg, ${COLORS.deep} 0%, ${COLORS.teal} 100%)`,
+              borderRadius: 16, padding: "28px",
+            }}>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: "#fff", marginBottom: 12 }}>The strategic message for Alex</div>
+              <p style={{ fontFamily: FONTS.body, fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0 }}>
+                The sponge city approach should not be positioned as competing with the Stormwater Plan — it should be framed as <strong style={{ color: "#fff" }}>making the Stormwater Plan work better</strong>. The message to the Flood Control District and Army Corps is: "Your new pipes and pump station will perform better and last longer if we also reduce the volume of water reaching them through upstream green infrastructure. We're not asking you to change your plan — we're asking to add a layer that multiplies its effectiveness."
+              </p>
+              <p style={{ fontFamily: FONTS.body, fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: "16px 0 0" }}>
+                This is the framing that gets engineers and agencies on board. They've committed to gray infrastructure; sponge city makes their investment more resilient. When atmospheric rivers intensify and sea levels rise beyond current projections, the communities with both gray and green infrastructure will be the ones that survive.
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* KEY PARTNERS */}
+      <section style={{ background: COLORS.cream, padding: "60px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg={COLORS.mint} color={COLORS.deep}>Ecosystem</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 30, color: COLORS.slate,
+              margin: "16px 0 24px", lineHeight: 1.2,
+            }}>Key partners and resources</h2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12,
+            }}>
+              {[
+                { name: "Marin City Climate Resilience & Health Justice", role: "Community anchor" },
+                { name: "Marin County Flood Control District", role: "Zone 3 / Richardson Bay" },
+                { name: "U.S. Army Corps of Engineers", role: "$13.5M flood solution" },
+                { name: "Caltrans", role: "Hwy 101 sea level rise project" },
+                { name: "Coast Miwok Tribal Council", role: "Historical wetland knowledge" },
+                { name: "Marin City Community Development Corp.", role: "Community planning" },
+                { name: "Marin City Stormwater Plan 2025", role: "Technical foundation" },
+                { name: "National Park Service / GGNRA", role: "Upper watershed partner" },
+                { name: "Spire Weather & Climate", role: "Satellite monitoring & storm tracking" },
+              ].map((p, i) => (
+                <div key={i} style={{
+                  background: "#fff", borderRadius: 10, padding: "16px 18px",
+                  border: "1px solid #e8e8e8",
+                }}>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: COLORS.slate, marginBottom: 4 }}>{p.name}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted }}>{p.role}</div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* COMMUNITY ENGAGEMENT */}
+      <section id="engage" style={{ background: COLORS.cream, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <Badge bg="#EEEDFE" color="#534AB7">Community engagement</Badge>
+            <h2 style={{
+              fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+              margin: "16px 0 12px", lineHeight: 1.2,
+            }}>How we bring the community in</h2>
+            <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 28 }}>
+              Lead with the problem everyone lives with — not the technology. The opening line isn't "sponge city" or "China innovations." It's: "You've been flooding for 80 years. The county is finally spending money on bigger pipes — but bigger pipes alone won't fix this. Here's what will."
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.05}>
+            <div style={{
+              background: `linear-gradient(135deg, #534AB7 0%, #6C3483 100%)`,
+              borderRadius: 16, padding: "24px 28px", marginBottom: 24,
+            }}>
+              <div style={{ fontFamily: FONTS.display, fontSize: 20, color: "#fff", marginBottom: 10 }}>Trust first, technology second</div>
+              <p style={{ fontFamily: FONTS.body, fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0 }}>
+                Terrie Green and Marin City Climate Resilience & Health Justice are the trust anchors. Nothing moves without their endorsement. Alex presents to Terrie privately first, then asks her to co-present or introduce the concept at community forums. If Terrie says "this is worth looking at," the community listens.
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>Quick wins — next 30 days, almost no budget</div>
+            <div style={{ display: "grid", gap: 12, marginBottom: 28 }}>
+              {[
+                { icon: "🚶", title: "Community flood walk", desc: "Alex leads 15–20 residents from Drake Avenue down Donahue Street to the pond and tide gate. At each stop, hold up a printed rendering from this website showing what that spot could look like. People photograph themselves at flood spots. They share on social media. This costs nothing.", effort: "Free" },
+                { icon: "🌿", title: "Pop-up rain garden", desc: "Six bags of mulch, a few native plants from a local nursery, one afternoon in someone's front yard or a community garden. Let kids plant. Take photos. It doesn't need to be engineered — it needs to exist so people can see and touch what a sponge city element looks like.", effort: "~$150" },
+                { icon: "☕", title: "Sponge City Saturdays", desc: "One Saturday a month. Coffee, pastries, and a simple task: clean a storm drain inlet, plant native grasses in a neglected median, install a rain barrel. Low-stakes, social, builds a volunteer base before construction starts.", effort: "~$50/month" },
+                { icon: "📱", title: "QR code flyers everywhere", desc: "Print flyers with a QR code linking to this website. Post at the Gateway Shopping Center, the school fence, the CSD building, bus stops, and the laundromat. Anyone can scan and explore the full plan on their phone.", effort: "~$30" },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  background: "#fff", borderRadius: 14, padding: "18px 22px",
+                  border: "1px solid #e8e8e8", display: "flex", gap: 14, alignItems: "flex-start",
+                }}>
+                  <span style={{ fontSize: 28, flexShrink: 0 }}>{item.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <div style={{ fontFamily: FONTS.body, fontSize: 15, fontWeight: 600, color: COLORS.slate }}>{item.title}</div>
+                      <span style={{ fontFamily: FONTS.body, fontSize: 11, fontWeight: 600, color: COLORS.teal, background: COLORS.mint, padding: "2px 8px", borderRadius: 8 }}>{item.effort}</span>
+                    </div>
+                    <div style={{ fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted, lineHeight: 1.6, marginTop: 4 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.15}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>Where to show up</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 28 }}>
+              {[
+                { place: "Gateway Flea Market", how: "Table with printed renderings, QR codes, sign-up sheet. Reaches hundreds of residents in one Saturday.", icon: "🛍" },
+                { place: "CSD board meetings", how: "Formal presentations using the Analysis section. This is where policy decisions happen.", icon: "🏛" },
+                { place: "MLK Academy", how: "Partner with a science teacher. Students design rain gardens, track Spire weather data, present to parents.", icon: "🏫" },
+                { place: "Sunday services", how: "Two minutes after service at local churches. If a pastor mentions it, the community hears it.", icon: "⛪" },
+                { place: "Facebook & Nextdoor", how: "Post the before/after renderings: 'What if Donahue Street looked like this?' Link to this website.", icon: "💬" },
+                { place: "Local media", how: "KQED and Marin IJ. A community-led sponge city initiative inspired by China and powered by satellites — that's a story.", icon: "📰" },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  background: "#fff", borderRadius: 12, padding: "14px 16px",
+                  border: "1px solid #e8e8e8",
+                }}>
+                  <span style={{ fontSize: 20 }}>{item.icon}</span>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 6 }}>{item.place}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, lineHeight: 1.5, marginTop: 3 }}>{item.how}</div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>Frame it as jobs and ownership</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 24 }}>
+              <div style={{
+                background: "#fff", borderRadius: 14, padding: "20px 22px",
+                border: `1px solid ${COLORS.teal}`, borderLeft: `4px solid ${COLORS.teal}`,
+              }}>
+                <div style={{ fontFamily: FONTS.body, fontSize: 15, fontWeight: 600, color: COLORS.teal, marginBottom: 6 }}>The jobs message</div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.7 }}>
+                  "This project creates 3–5 paid local positions for maintaining the infrastructure that protects your neighborhood. That's not just flood management — it's economic development for a community where median income is less than half the county average."
+                </div>
+              </div>
+              <div style={{
+                background: "#fff", borderRadius: 14, padding: "20px 22px",
+                border: `1px solid ${COLORS.warm}`, borderLeft: `4px solid ${COLORS.warm}`,
+              }}>
+                <div style={{ fontFamily: FONTS.body, fontSize: 15, fontWeight: 600, color: COLORS.warm, marginBottom: 6 }}>The ownership message</div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.muted, lineHeight: 1.7 }}>
+                  "The county builds pipes underground that you never see and can't maintain. Sponge city builds gardens in your neighborhood that you plant, you maintain, and you control. This is infrastructure you own."
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.25}>
+            <div style={{ fontFamily: FONTS.display, fontSize: 20, color: COLORS.slate, marginBottom: 14 }}>The sequence that builds momentum</div>
+            <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
+              {[
+                { step: 1, label: "Earn trust", detail: "Through Terrie Green and existing organizations" },
+                { step: 2, label: "Make it tangible", detail: "Community walk, pop-up rain garden, this website" },
+                { step: 3, label: "Build a base", detail: "Sponge City Saturdays, volunteer sign-ups" },
+                { step: 4, label: "Present formally", detail: "CSD board with community signatures" },
+                { step: 5, label: "Launch a pilot", detail: "MLK Academy or George Rocky Graham Park" },
+                { step: 6, label: "Scale up", detail: "Document results, apply for federal grants" },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  flex: "1 1 140px", textAlign: "center", padding: "16px 8px",
+                  position: "relative",
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: "50%", margin: "0 auto 8px",
+                    background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: FONTS.body, fontSize: 14, fontWeight: 600, color: "#fff",
+                  }}>{s.step}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate }}>{s.label}</div>
+                  <div style={{ fontFamily: FONTS.body, fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{s.detail}</div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* TACTICAL ACTION STEPS */}
+      <section id="actions" style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px 60px" }}>
+        <FadeIn>
+          <Badge bg="#FBEAEA" color={COLORS.coral}>Action plan</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>What Alex does next</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.7, marginBottom: 28, maxWidth: 640 }}>
+            Concrete, tactical steps organized by timeline. Each action builds momentum toward the larger sponge city vision — starting with things Alex can do today.
+          </p>
+        </FadeIn>
+        <ActionChecklist />
+      </section>
+
+      {/* SPIRE TECHNOLOGY PARTNER */}
+      <section style={{ maxWidth: 760, margin: "0 auto", padding: "60px 24px 80px" }}>
+        <FadeIn>
+          <Badge bg="#FBEAEA" color="#C0392B">Technology partner</Badge>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 30, color: COLORS.slate,
+            margin: "16px 0 12px", lineHeight: 1.2,
+          }}>Spire Weather & Climate — monitoring from space</h2>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 20 }}>
+            With no USGS ground station in Marin City's watershed, the community has a critical data blind spot. <a href="https://spire.com/weather-climate" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.teal, fontWeight: 600 }}>Spire Weather & Climate</a> can fill that gap from orbit. Spire operates a fully deployed satellite constellation that covers every location on Earth 100 times per day, collecting radio occultation atmospheric profiles, soil moisture data, and ocean wind measurements. Their proprietary models generate high-resolution (3km) weather forecasts extending 6 days ahead — with particular strength in under-observed areas where traditional ground infrastructure doesn't exist.
+          </p>
+          <p style={{ fontSize: 17, color: COLORS.muted, lineHeight: 1.8, marginBottom: 24 }}>
+            For the Marin City Sponge City project, Spire's soil moisture insights (available at 100m resolution with a 40-year historical archive) could provide the baseline and ongoing measurements needed to design interventions, track their effectiveness, and build the evidence base for continued funding. Alex is in contact with Teresa and Peter at Spire to establish storm pattern tracking and precipitation monitoring for the Richardson Bay watershed area.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12,
+          }}>
+            {[
+              { icon: "🛰", title: "Satellite constellation", desc: "100x/day global coverage with 600+ years of spaceflight heritage" },
+              { icon: "🌱", title: "Soil moisture sensing", desc: "100m resolution with 40-year historical archive via GNSS-R satellites" },
+              { icon: "📡", title: "Radio occultation", desc: "Atmospheric profiles for temperature, pressure, and humidity" },
+              { icon: "🌧", title: "High-res forecasts", desc: "3km resolution, hourly output, 6-day lead time for the US" },
+              { icon: "⚡", title: "DeepVision alerts", desc: "Real-time weather risk monitoring and proactive storm alerting" },
+              { icon: "🔌", title: "Weather API", desc: "RESTful API for integrating live data into a community dashboard" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: "#fff", borderRadius: 10, padding: "14px 16px",
+                border: "1px solid #e8e8e8",
+              }}>
+                <span style={{ fontSize: 22 }}>{item.icon}</span>
+                <div style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: COLORS.slate, marginTop: 6 }}>{item.title}</div>
+                <div style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.muted, lineHeight: 1.5, marginTop: 2 }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <div style={{
+            marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap",
+          }}>
+            <a href="https://spire.com/weather-climate" target="_blank" rel="noopener noreferrer" style={{
+              fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: "#fff",
+              textDecoration: "none", padding: "10px 20px", borderRadius: 8,
+              background: "#C0392B",
+            }}>Visit Spire Weather & Climate ↗</a>
+            <a href="https://spire.com/weather-climate/soil-moisture-insights/" target="_blank" rel="noopener noreferrer" style={{
+              fontFamily: FONTS.body, fontSize: 13, fontWeight: 600, color: "#C0392B",
+              textDecoration: "none", padding: "10px 20px", borderRadius: 8,
+              border: "1px solid #C0392B",
+            }}>Soil moisture insights ↗</a>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* CTA */}
+      <section style={{
+        background: `linear-gradient(160deg, ${COLORS.deep} 0%, ${COLORS.teal} 100%)`,
+        padding: "80px 24px", textAlign: "center",
+      }}>
+        <FadeIn>
+          <h2 style={{
+            fontFamily: FONTS.display, fontSize: 36, color: "#fff",
+            margin: "0 0 16px", lineHeight: 1.2,
+          }}>Let's make Marin City a sponge</h2>
+          <p style={{
+            fontFamily: FONTS.body, fontSize: 17, color: "rgba(255,255,255,0.75)",
+            maxWidth: 480, margin: "0 auto 32px", lineHeight: 1.7,
+          }}>
+            This project is community-driven. Whether you're a resident, an organization, or a potential funder — your participation matters.
+          </p>
+          <div style={{
+            display: "inline-flex", gap: 12, flexWrap: "wrap", justifyContent: "center",
+          }}>
+            <a href="https://storage.googleapis.com/proudcity/marinwatershedprogramca/2025/12/57b48465-marincitystormwaterplanoctober2025.pdf" target="_blank" style={{
+              display: "inline-block", padding: "14px 28px", borderRadius: 40,
+              background: "#fff", color: COLORS.deep, fontFamily: FONTS.body,
+              fontSize: 15, fontWeight: 600, textDecoration: "none",
+            }}>Read the Stormwater Plan 2025 ↗</a>
+            <a href="https://marincitycsd.com/" target="_blank" style={{
+              display: "inline-block", padding: "14px 28px", borderRadius: 40,
+              background: "rgba(255,255,255,0.12)", color: "#fff", fontFamily: FONTS.body,
+              fontSize: 15, fontWeight: 500, textDecoration: "none", border: "1px solid rgba(255,255,255,0.25)",
+            }}>Community Services District ↗</a>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* FOOTER */}
+      <footer style={{
+        padding: "32px 24px", textAlign: "center",
+        fontFamily: FONTS.body, fontSize: 13, color: COLORS.muted,
+        borderTop: "1px solid #e8e8e8",
+      }}>
+        <div style={{ marginBottom: 8 }}>
+          <span style={{ fontFamily: FONTS.display, color: COLORS.slate }}>Sponge City Marin</span> — A community project inspired by China's Sponge City Initiative
+        </div>
+        <div>Prepared for Marin City community engagement · 2026</div>
+      </footer>
+    </div>
+  );
+}
+
+    ReactDOM.render(
+      React.createElement(SpongeCityMarinCity),
+      document.getElementById('root')
+    );
+  </script>
+</body>
+</html>
